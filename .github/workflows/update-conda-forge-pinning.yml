@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  update-pinning:
+  update-conda-forge-pinning:
     runs-on: ubuntu-latest
     steps:
       - name: Bot token
@@ -35,19 +35,19 @@ jobs:
         with:
           pixi-version: v0.75.0
           manifest-path: ros-distro-template/pixi.toml
-      - name: robostack-bot update-pinning
+      - name: robostack-bot update-conda-forge-pinning
         id: bot
         run: |
           pixi run --manifest-path ros-distro-template/pixi.toml robostack-bot \
             --summary "$RUNNER_TEMP/summary.md" \
-            update-pinning --template-dir ros-distro-template $(ls -d ros-*/ | grep -v ros-distro-template)
+            update-conda-forge-pinning --template-dir ros-distro-template $(ls -d ros-*/ | grep -v ros-distro-template)
       - name: Open or update the pull request
         if: steps.bot.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           path: ros-distro-template
           token: ${{ steps.app.outputs.token }}
-          branch: bot/update-pinning
+          branch: bot/update-conda-forge-pinning
           delete-branch: true
           commit-message: ${{ steps.bot.outputs.title }}
           title: ${{ steps.bot.outputs.title }}

@@ -86,13 +86,8 @@ doxygen:
   robostack: [doxygen, graphviz]
 draco:
   robostack: [draco]
-[% if distro in ['humble', 'jazzy', 'kilted'] %]
 eigen:
   robostack: [eigen, eigen-abi-devel]
-[% else %]
-eigen:
-  robostack: [eigen]
-[% endif %]
 emacs:
   robostack: [emacs]
 festival:
@@ -340,13 +335,8 @@ libgazebo11-dev:
   robostack: [gazebo, libprotobuf, libabseil]
 libgazebo9-dev:
   robostack: [gazebo, libprotobuf, libabseil]
-[% if distro in ['humble', 'kilted'] %]
-libgdal-dev:
-  robostack: [libgdal]
-[% else %]
 libgdal-dev:
   robostack: [libgdal-core]
-[% endif %]
 libgeos++-dev:
   robostack: [geos]
 libgflags-dev:
@@ -470,19 +460,11 @@ libpcap:
   robostack: [libpcap]
 libpcl-all:
   robostack: [pcl]
-[% if distro in ['humble', 'jazzy'] %]
-libpcl-all-dev:
-  robostack:
-    linux: [pcl, libboost-devel, vtk-base, libopengl-devel, libgl-devel]
-    osx: [pcl, libboost-devel, vtk-base]
-    win64: [pcl, libboost-devel, vtk-base]
-[% else %]
 libpcl-all-dev:
   robostack:
     linux: [pcl, libboost-devel, vtk-base, libopengl-devel, libgl-devel, eigen-abi-devel]
     osx: [pcl, libboost-devel, vtk-base, eigen-abi-devel]
     win64: [pcl, libboost-devel, vtk-base, eigen-abi-devel]
-[% endif %]
 libpcl-common:
   robostack: [pcl]
 libpcl-features:
@@ -1168,13 +1150,8 @@ python3-uvloop:
     linux: [uvloop]
     osx: [uvloop]
     win64: []
-[% if distro in ['humble', 'jazzy'] %]
-python3-vcstool:
-  robostack: [vcstool]
-[% else %]
 python3-vcstool:
   robostack: [vcs2l]
-[% endif %]
 python3-venv:
   robostack: [virtualenv, pip, pip-tools, setuptools]
 python3-websocket:
@@ -1185,19 +1162,11 @@ python3-yaml:
   robostack: [pyyaml]
 python3-zmq:
   robostack: [pyzmq]
-[% if distro in ['humble', 'jazzy'] %]
-qml-module-qtquick-extras:
-  robostack:
-    linux: [qt-main, libopengl-devel, libgl-devel]
-    osx: [qt-main]
-    win64: [qt-main]
-[% else %]
 qml-module-qtquick-extras:
   robostack:
     linux: [qt6-main, libopengl-devel, libgl-devel]
     osx: [qt6-main]
     win64: [qt6-main]
-[% endif %]
 qt-base-dev:
   robostack:
     linux: [qt6-main, libopengl-devel, libgl-devel]
@@ -1265,10 +1234,8 @@ socat:
     linux: [socat]
     osx: [socat]
     win64: []
-[% if distro not in ['humble'] %]
 sophus:
   robostack: [sophus]
-[% endif %]
 spacenavd:
   robostack: [libspnav]
 spdlog:
@@ -1295,10 +1262,8 @@ tinyxml:
   robostack: [tinyxml]
 tinyxml2:
   robostack: [tinyxml2]
-[% if distro not in ['humble', 'jazzy', 'kilted'] %]
 tl_expected:
   robostack: [cpp-expected]
-[% endif %]
 udev:
   robostack:
     linux: [libusb, libudev]
@@ -1330,13 +1295,8 @@ x11-dev:
     win64: [xorg-libx11]
 xsimd:
   robostack: [xsimd]
-[% if distro in ['jazzy'] %]
 xtensor:
   robostack: [xtensor]
-[% else %]
-xtensor:
-  robostack: [xtensor ==0.24.7]
-[% endif %]
 yaml:
   robostack: [yaml, yaml-cpp]
 yaml-cpp:

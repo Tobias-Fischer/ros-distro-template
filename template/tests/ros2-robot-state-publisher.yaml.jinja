@@ -1,53 +1,22 @@
-[% if distro == 'humble' %]
-tests:
-  # Regression test for https://github.com/RoboStack/ros-humble/issues/274
-  - script:
-    - if: linux
-      then: launch_test robot_state_publisher_smoke_test_launch.py
-    - if: osx
-      then: export ROS_LOCALHOST_ONLY=1 RMW_IMPLEMENTATION=rmw_cyclonedds_cpp && launch_test robot_state_publisher_smoke_test_launch.py
-    # win-64 hits the same "Type support not from this implementation" /
-    # "rcl node's rmw handle is invalid" crash as the osx case above was
-    # written for (confirmed not cache-related: rmw_fastrtps_cpp/rcl were
-    # freshly rebuilt and it still happened) -- apply the same
-    # rmw_cyclonedds_cpp workaround here too, using batch syntax since win
-    # test scripts run under cmd.exe rather than bash.
-    - if: win
-      then:
-        - set ROS_LOCALHOST_ONLY=1
-        - set RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-        - launch_test robot_state_publisher_smoke_test_launch.py
-    requirements:
-      run:
-        - ros2-launch-testing-ros
-        - ros2-rcl-interfaces
-        - ros2-rclpy
-    files:
-      recipe:
-        - robot_state_publisher_smoke_test_launch.py
-[% elif distro == 'jazzy' %]
-tests:
-  # Regression test for https://github.com/RoboStack/ros-humble/issues/274
-  - script:
-    - if: osx
-      then: export ROS_LOCALHOST_ONLY=1 RMW_IMPLEMENTATION=rmw_cyclonedds_cpp && launch_test robot_state_publisher_smoke_test_launch.py
-      else: launch_test robot_state_publisher_smoke_test_launch.py
-    requirements:
-      run:
-        - ros2-launch-testing-ros
-        - ros2-rcl-interfaces
-        - ros2-rclpy
-    files:
-      recipe:
-        - robot_state_publisher_smoke_test_launch.py
-[% else %]
 tests:
   # Regression test for https://github.com/RoboStack/ros-humble/issues/274
   - script:
     - if: osx
       # See https://github.com/RoboStack/ros-lyrical/pull/56 for the macOS discovery failure and rationale.
       then: export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp CYCLONEDDS_URI='<CycloneDDS><Domain><General><Interfaces><NetworkInterface name="lo0" multicast="true" allow_multicast="true"/></Interfaces></General></Domain></CycloneDDS>' && launch_test robot_state_publisher_smoke_test_launch.py
+[% if distro == "humble" %]
+    # win-64 (humble) hits a "Type support not from this implementation" /
+    # "rcl node's rmw handle is invalid" crash with the default RMW; use
+    # rmw_cyclonedds_cpp there too (batch syntax: win test scripts run in cmd.exe).
+    - if: win
+      then:
+        - set RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+        - launch_test robot_state_publisher_smoke_test_launch.py
+    - if: linux
+      then: launch_test robot_state_publisher_smoke_test_launch.py
+[% else %]
       else: launch_test robot_state_publisher_smoke_test_launch.py
+[% endif %]
     requirements:
       run:
         - ros2-launch-testing-ros
@@ -56,4 +25,3 @@ tests:
     files:
       recipe:
         - robot_state_publisher_smoke_test_launch.py
-[% endif %]

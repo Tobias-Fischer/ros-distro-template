@@ -1,5 +1,5 @@
 # Push a template version to every distribution as a pull request
-# (`copier update` + `pixi lock`, see robostack_bot.commands.rerender).
+# (`copier update` + `pixi lock`, robostack-bot update-from-template).
 #
 # Runs when a release is published, or manually (optionally as a dry run that only
 # uploads the would-be changes as an artifact).
@@ -73,7 +73,7 @@ jobs:
           args=()
           [ -n "$REF" ] && args+=(--vcs-ref "$REF")
           uvx --from "git+https://github.com/${GITHUB_REPOSITORY}@${REF:-main}" \
-            robostack-bot --summary "$RUNNER_TEMP/summary.md" rerender "${args[@]}"
+            robostack-bot --summary "$RUNNER_TEMP/summary.md" update-from-template "${args[@]}"
           git diff > "$RUNNER_TEMP/${{ matrix.distro }}.diff"
       - uses: actions/upload-artifact@v6
         with:

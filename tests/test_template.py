@@ -295,18 +295,26 @@ class BotTest(unittest.TestCase):
 
 
 class SmallTest(unittest.TestCase):
+    def test_issue_template_lists_every_command(self):
+        form = yaml.safe_load((ROOT / "template/.github/ISSUE_TEMPLATE/3-robostack-bot.yml").read_text())
+        dropdown = next(item for item in form["body"] if item.get("id") == "command")
+        self.assertEqual(dropdown["attributes"]["options"], list(commands.COMMANDS))
+        text = form["body"][0]["attributes"]["value"]
+        for command in commands.COMMANDS:
+            self.assertIn(f"`{command}`", text)
+
     def test_parse_comment(self):
-        self.assertEqual(commands.parse_comment("@robostack-bot rerender", "MEMBER"), "rerender")
-        self.assertEqual(commands.parse_comment("Hi\n@robostack-bot, please update-snapshot", "OWNER"), "update-snapshot")
-        self.assertIsNone(commands.parse_comment("@robostack-bot rerender", "CONTRIBUTOR"))
+        self.assertEqual(commands.parse_comment("@robostack-bot update-from-template", "MEMBER"), "update-from-template")
+        self.assertEqual(commands.parse_comment("Hi\n@robostack-bot, please update-rosdistro-snapshot", "OWNER"), "update-rosdistro-snapshot")
+        self.assertIsNone(commands.parse_comment("@robostack-bot update-from-template", "CONTRIBUTOR"))
         self.assertIsNone(commands.parse_comment("@robostack-bot rm-rf", "MEMBER"))
         self.assertIsNone(commands.parse_comment("thanks @robostack-bot", "MEMBER"))
         # issue form ("robostack-bot command" issue template)
-        form = "### Command\n\nupdate-snapshot\n\n### Notes\n\n_No response_"
-        self.assertEqual(commands.parse_comment(form, "OWNER"), "update-snapshot")
+        form = "### Command\n\nfind-stale-packages\n\n### Notes\n\n_No response_"
+        self.assertEqual(commands.parse_comment(form, "OWNER"), "find-stale-packages")
         self.assertIsNone(commands.parse_comment(form, "NONE"))
         # the pinning is shared and updated in the template repository
-        self.assertIsNone(commands.parse_comment("@robostack-bot update-pinning", "OWNER"))
+        self.assertIsNone(commands.parse_comment("@robostack-bot update-conda-forge-pinning", "OWNER"))
 
     def test_snapshot_changes(self):
         text = commands.snapshot_changes({"a": "1.0", "b": "2.0", "c": "1"}, {"a": "1.1", "b": "2.0", "d": "3"})

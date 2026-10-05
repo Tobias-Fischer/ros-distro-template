@@ -11,7 +11,9 @@ package of that distribution (rosdistro_snapshot.yaml): e.g. `tl_expected` is a
 rosdep key in newer distributions but a ROS package in humble, and mapping it to
 conda-forge there would replace the ROS package.
 
-    python tools/merge_conda_index.py --repos-dir .. > template/robostack.yaml.jinja
+    python tools/merge_conda_index.py --repos-dir .. > template/robostack.yaml
+
+(write to robostack.yaml.jinja instead if the output contains [% %] blocks)
 """
 
 from __future__ import annotations
@@ -35,7 +37,17 @@ UNIFY = {
     "ignition-gazebo6": "humble",  # superset (adds libgl-devel on linux), only humble uses it
     "python-pygraphviz": "jazzy",  # superset (adds graphviz)
     "python3-pygraphviz": "jazzy",
+    "eigen": "humble",  # always with eigen-abi-devel
+    "libpcl-all-dev": "rolling",  # with eigen-abi-devel
+    "libgdal-dev": "rolling",  # libgdal-core
+    "python3-vcstool": "rolling",  # vcs2l
+    "qml-module-qtquick-extras": "rolling",  # qt6-main
+    "xtensor": "jazzy",  # no version constraint
 }
+
+# Keys mapped to conda-forge in every distribution, even where the name is also a
+# ROS package (the conda-forge package replaces the ROS/vendor package).
+MAP_EVERYWHERE = {"tl_expected", "sophus"}
 
 # Keys left out of robostack.yaml because the shared packages-ignore.yaml maps them
 # to nothing (robostack.yaml is searched first, so a mapping there would win).
@@ -98,7 +110,10 @@ def main() -> int:
             continue
         present = {d: parsed[d][1][key] for d in DISTROS if key in parsed[d][1]}
         # distributions where the key is a ROS package and must stay unmapped
-        excluded = [d for d in DISTROS if d not in present and key in ros_packages[d]]
+        excluded = [
+            d for d in DISTROS
+            if d not in present and key in ros_packages[d] and key not in MAP_EVERYWHERE
+        ]
         if excluded:
             out.append(f"[% if distro not in {excluded!r} %]\n")
         if key in UNIFY:

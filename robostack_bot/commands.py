@@ -18,8 +18,16 @@ import yaml
 
 from . import template as tpl
 
-# Commands a distribution can run (comments, issues, workflow_dispatch).
-COMMANDS = ("rerender", "update-snapshot", "check-stale", "drift", "upstream")
+# Commands a distribution can run (Actions > Run workflow, command issues and
+# `@robostack-bot <command>` comments), with what they do.
+COMMAND_HELP = {
+    "update-from-template": "update this repository to the latest template version (copier update + pixi lock)",
+    "update-rosdistro-snapshot": "refresh rosdistro_snapshot.yaml to the latest rosdistro release",
+    "find-stale-packages": "list published packages built against pins that no longer match",
+    "check-template-drift": "list template-owned files that were edited by hand in this repository",
+    "upstream-to-template": "move hand edits of template-owned files into the template (PR there)",
+}
+COMMANDS = tuple(COMMAND_HELP)
 
 
 @dataclass
@@ -56,7 +64,7 @@ def channel_url(answers: dict, for_repodata: bool = False) -> str:
 
 
 # --------------------------------------------------------------------------- #
-# rerender: template -> distribution
+# update-from-template: template -> distribution
 # --------------------------------------------------------------------------- #
 def rerender(repo: Path, vcs_ref: str | None = None) -> Result:
     before = tpl.read_answers(repo).get("_commit")
@@ -86,7 +94,7 @@ def rerender(repo: Path, vcs_ref: str | None = None) -> Result:
             "",
             "**Conflicts:** these template-owned files were edited in this repository, "
             "so the update could not be merged automatically. Resolve the `.rej` files "
-            "(and consider `@robostack-bot upstream` to move the edit into the template):",
+            "(and consider `@robostack-bot upstream-to-template` to move the edit into the template):",
         ] + [f"- `{f}`" for f in rejects]
     labels = (["template-conflict"] if rejects else []) + ([] if deps_ok else ["pinning-conflict"])
     return Result(
@@ -113,7 +121,7 @@ def check_deps(repo: Path) -> tuple[bool, list[str]]:
 
 
 # --------------------------------------------------------------------------- #
-# drift: hand edits of template-owned files
+# check-template-drift: hand edits of template-owned files
 # --------------------------------------------------------------------------- #
 def drift(repo: Path, template_src: str | None = None) -> Result:
     found = tpl.drift(repo, template_src)
@@ -122,7 +130,7 @@ def drift(repo: Path, template_src: str | None = None) -> Result:
     lines = [
         "These files are owned by the template but differ from it. Changes to them are "
         "overwritten by the next template update; move them into the template instead "
-        "(comment `@robostack-bot upstream`).",
+        "(comment `@robostack-bot upstream-to-template`).",
         "",
     ]
     for d in found:
@@ -132,7 +140,7 @@ def drift(repo: Path, template_src: str | None = None) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# upstream: distribution -> template (best effort)
+# upstream-to-template: distribution -> template (best effort)
 # --------------------------------------------------------------------------- #
 def _template_source(template_dir: Path, rel: str, answers: dict) -> Path | None:
     """The file in template/ that renders to `rel`."""
@@ -195,7 +203,7 @@ def upstream(repo: Path, template_dir: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# update-snapshot
+# update-rosdistro-snapshot
 # --------------------------------------------------------------------------- #
 def _versions(path: Path) -> dict[str, str]:
     if not path.is_file():
@@ -235,7 +243,7 @@ def update_snapshot(repo: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# update-pinning
+# update-conda-forge-pinning (template repository)
 # --------------------------------------------------------------------------- #
 def update_pinning(template_dir: Path, distro_dirs: list[Path]) -> Result:
     """Move the shared template/vinca_pinning.yaml to the latest conda-forge pinning.
@@ -273,7 +281,7 @@ def update_pinning(template_dir: Path, distro_dirs: list[Path]) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# check-stale
+# find-stale-packages
 # --------------------------------------------------------------------------- #
 def check_stale(repo: Path) -> Result:
     answers = tpl.read_answers(repo)
@@ -293,7 +301,7 @@ def check_stale(repo: Path) -> Result:
 
 
 # --------------------------------------------------------------------------- #
-# new-distro
+# new-distribution (template repository)
 # --------------------------------------------------------------------------- #
 # Distribution-owned files seeded from the source distribution; everything else
 # (including robostack.yaml, packages-ignore.yaml and vinca_pinning.yaml) is shared.

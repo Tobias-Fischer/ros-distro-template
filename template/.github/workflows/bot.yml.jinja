@@ -5,7 +5,8 @@
 #     Actions > robostack-bot > Run workflow,
 #     an issue from the "robostack-bot command" issue template, or
 #     a comment `@robostack-bot <command>` on an issue/PR
-#   commands: rerender | update-snapshot | check-stale | drift | upstream
+#   commands: update-from-template | update-rosdistro-snapshot | find-stale-packages |
+#             check-template-drift | upstream-to-template
 #   (the shared conda-forge pinning is updated in the template repository)
 # - on pull requests: warn when template-owned files are edited by hand
 #
@@ -23,9 +24,9 @@ on:
       command:
         description: Command to run
         type: choice
-        options: [rerender, update-snapshot, check-stale, drift]
+        options: [update-from-template, update-rosdistro-snapshot, find-stale-packages, check-template-drift, upstream-to-template]
       vcs_ref:
-        description: Template version for rerender (default latest)
+        description: Template version for update-from-template (default latest)
         required: false
   issue_comment:
     types: [created]
@@ -41,7 +42,7 @@ env:
   BOT: uvx --from git+[= template_url =] robostack-bot
 
 jobs:
-  drift:
+  check-template-drift:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     permissions:
@@ -54,7 +55,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - name: Check template-owned files
         id: bot
-        run: $BOT --summary "$RUNNER_TEMP/summary.md" drift
+        run: $BOT --summary "$RUNNER_TEMP/summary.md" check-template-drift
       - name: Report
         if: steps.bot.outputs.ok == 'false'
         env:
@@ -84,10 +85,10 @@ jobs:
           ASSOCIATION: ${{ github.event.comment.author_association || github.event.issue.author_association }}
         run: |
           case "$EVENT" in
-            schedule) commands='["update-snapshot"]' ;;
+            schedule) commands='["update-rosdistro-snapshot"]' ;;
             workflow_dispatch) commands="[\"$INPUT\"]" ;;
             issue_comment|issues)
-              command=$($BOT parse-comment --body "$BODY" --association "$ASSOCIATION")
+              command=$($BOT parse-command --body "$BODY" --association "$ASSOCIATION")
               if [ -n "$command" ]; then commands="[\"$command\"]"; else commands='[]'; fi ;;
           esac
           echo "commands=$commands" >> "$GITHUB_OUTPUT"
@@ -126,8 +127,8 @@ jobs:
           run-install: false
       - uses: astral-sh/setup-uv@v7
 
-      - name: Check out the template (upstream)
-        if: matrix.command == 'upstream'
+      - name: Check out the template (upstream-to-template)
+        if: matrix.command == 'upstream-to-template'
         uses: actions/checkout@v6
         with:
           repository: RoboStack/ros-distro-template
@@ -145,14 +146,14 @@ jobs:
           git config --global user.email "robostack-bot@users.noreply.github.com"
           args=()
           case "$COMMAND" in
-            rerender) [ -n "$VCS_REF" ] && args+=(--vcs-ref "$VCS_REF") ;;
-            upstream) args+=(--template-dir .template-src) ;;
+            update-from-template) [ -n "$VCS_REF" ] && args+=(--vcs-ref "$VCS_REF") ;;
+            upstream-to-template) args+=(--template-dir .template-src) ;;
           esac
           $BOT --summary "$RUNNER_TEMP/summary.md" "$COMMAND" "${args[@]}"
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Open or update the pull request
-        if: steps.bot.outputs.changed == 'true' && matrix.command != 'upstream'
+        if: steps.bot.outputs.changed == 'true' && matrix.command != 'upstream-to-template'
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ steps.app.outputs.token || secrets.GHA_PAT }}
@@ -163,13 +164,13 @@ jobs:
           body-path: ${{ runner.temp }}/summary.md
           labels: robostack-bot,${{ steps.bot.outputs.labels }}
 
-      - name: Open the template pull request (upstream)
-        if: steps.bot.outputs.changed == 'true' && matrix.command == 'upstream'
+      - name: Open the template pull request (upstream-to-template)
+        if: steps.bot.outputs.changed == 'true' && matrix.command == 'upstream-to-template'
         uses: peter-evans/create-pull-request@v7
         with:
           path: .template-src
           token: ${{ steps.app.outputs.token || secrets.GHA_PAT }}
-          branch: bot/upstream-[= distro =]
+          branch: bot/upstream-to-template-[= distro =]
           commit-message: "${{ steps.bot.outputs.title }}"
           title: "${{ steps.bot.outputs.title }}"
           body-path: ${{ runner.temp }}/summary.md

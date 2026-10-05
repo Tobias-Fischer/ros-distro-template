@@ -183,7 +183,7 @@ version and this distribution's answers.
   `packages-ignore.yaml`, `ci.yaml`, `patch/`, other `tests/` files, and the generated
   `rosdistro_snapshot.yaml`, `conda_build_config.yaml` and `pixi.lock`.
 - Re-render after a template change: `pixi exec copier update --trust --defaults`
-  (or comment `@robostack-bot rerender` on a PR/issue).
+  (or comment `@robostack-bot update-from-template` on a PR/issue).
 - Port patches only for an existing compatible package, using
   `patch/ros-$DISTRO-<pkg>.patch` and matching recipe wiring; do not copy a patch
   solely because its filename exists in another distribution.
