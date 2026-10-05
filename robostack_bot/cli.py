@@ -115,6 +115,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.summary:
         args.summary.write_text(result.summary + "\n\n🤖 robostack-bot\n")
     _set_outputs(result)
+    if result.error:
+        return 1
     return 0 if result.ok or args.command in REPORTING else 1
 
 

@@ -42,12 +42,18 @@ import tomllib
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Iterable, Iterator, Optional
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 import ruamel.yaml
 
 ROS_PREFIXES = ("ros-", "ros2-")
 DEFAULT_CHANNELS = ["https://repo.prefix.dev/conda-forge"]
+# prefix.dev's package CDN rejects urllib's default User-Agent with 403.
+USER_AGENT = "robostack-check-dependency-compat"
+
+
+def _urlopen(url: str, timeout: int):
+    return urlopen(Request(url, headers={"User-Agent": USER_AGENT}), timeout=timeout)  # noqa: S310
 FAKE_PACKAGE_NAME = "robostack-dependency-compat-check"
 DEFAULT_GLIBC = "2.17"  # fallback when c_stdlib_version is not in the variant config
 DEFAULT_OSX = "15.0"
@@ -616,7 +622,7 @@ def report_conflicts(
 # ------------------------------------------------------------------- migrations
 def _fetch_json(url: str) -> Optional[Any]:
     try:
-        with urlopen(url, timeout=60) as response:  # noqa: S310
+        with _urlopen(url, timeout=60) as response:
             return json.load(response)
     except Exception:
         return None
@@ -834,7 +840,7 @@ def load_repodata(source: str, platform: str) -> tuple[dict[str, Any], bool]:
         url = source.rstrip("/")
         if not url.endswith("repodata.json"):
             url = f"{url}/{platform}/repodata.json"
-        with urlopen(url, timeout=300) as response:  # noqa: S310
+        with _urlopen(url, timeout=300) as response:
             data = json.load(response)
     else:
         path = Path(source)

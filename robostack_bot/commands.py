@@ -35,7 +35,8 @@ class Result:
     title: str
     summary: str
     changed: bool = False  # working tree changed, a PR should be opened
-    ok: bool = True  # False marks a failure that needs a human (labels the PR / fails the job)
+    ok: bool = True  # False: something needs a human (findings, conflicts, failures)
+    error: bool = False  # the command itself failed (fails the workflow job)
     labels: list[str] = field(default_factory=list)
 
 
@@ -292,6 +293,8 @@ def check_stale(repo: Path) -> Result:
         check=False,
     )
     output = tail(proc.stdout + proc.stderr, 200)
+    if "Traceback (most recent call last)" in output:
+        return Result("find-stale-packages failed", f"```\n{output}\n```", ok=False, error=True)
     ok = proc.returncode == 0
     return Result(
         "Stale packages" if not ok else "No stale packages",
