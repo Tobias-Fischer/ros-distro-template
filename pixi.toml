@@ -1,0 +1,21 @@
+[workspace]
+name = "ros-distro-template"
+description = "Copier template and bot for the RoboStack ROS distribution repositories"
+authors = ["Tobias Fischer <tobias.fischer@qut.edu.au>"]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = ["osx-arm64", "linux-64", "osx-64", "linux-aarch64", "win-64"]
+
+[dependencies]
+python = ">=3.14.0,<3.15"
+copier = ">=9.4"
+pyyaml = "*"
+gh = "*"
+git = "*"
+
+[pypi-dependencies]
+robostack-bot = { path = ".", editable = true }
+
+[tasks]
+render-all = { cmd = "python tools/render_all.py", description = "Render the template for every distribution and diff against the checkouts next to this repo." }
+check = { cmd = "python tools/render_all.py --check", description = "Fail if a rendered distribution differs from its repository." }
+test = { cmd = "python -m unittest discover -s tests -v", description = "Unit tests for the template and robostack-bot." }

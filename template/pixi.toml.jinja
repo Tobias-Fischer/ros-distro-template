@@ -1,0 +1,77 @@
+[workspace]
+name = "ros-[= distro =]"
+description = "RoboStack repo to package ros-[= distro =] packages as conda packages"
+authors = ["Tobias Fischer <tobias.fischer@qut.edu.au>", "Wolf Vollprecht <w.vollprecht@gmail.com>", "Silvio Traversaro <silvio@traversaro.it>", "Daisuke Nishimatsu <daisuke.nishimatsu1021@gmail.com>"]
+channels = ["https://prefix.dev/conda-forge"]
+platforms = [
+  "osx-arm64",
+  # 2.17 is the glibc version used in CentOS 7
+  { platform = "linux-64", glibc = "2.17" },
+  "osx-64",
+  { platform = "linux-aarch64", glibc = "2.17" },
+  "win-64",
+]
+
+[target.win.activation.env]
+PYTHONIOENCODING = "utf-8"
+
+[dependencies]
+python = ">=3.14.0,<3.15"
+# rattler-build regression, pinning to 0.57
+rattler-build = ">=0.57.0,<0.58"
+cmake = "<4.0"
+setuptools = "<82.0"
+rattler-index = ">=0.27.16"
+# Some git repos need git-lfs, see https://github.com/RoboStack/ros-jazzy/issues/118
+git-lfs = "*"
+
+[target.win-64.dependencies]
+# patch is required by rattler-build
+m2-patch = "*"
+# git is required by rattler-build
+git = "*"
+
+[pypi-dependencies]
+# vinca revision: set via the `vinca_git`/`vinca_rev` copier answers.
+vinca = { git = "[= vinca_git =]", rev = "[= vinca_rev =]" }
+# For local development, temporarily use (and regenerate pixi.lock):
+# vinca = { path = "../vinca", editable = true }
+
+[tasks]
+generate-recipes = { cmd = "vinca -m", depends-on = ["remove-recipes"] }
+generate-gha-workflows = { cmd = "vinca-gha --trigger-branch dummy_build_branch_as_it_is_unused -d ./recipes", depends-on = ["generate-recipes"] }
+check-orphaned-patches = { cmd = "python check_orphaned_platform_patches.py", description = "Detect patch/ files vinca's add_package_name_variants() will never wire into any recipe because a same-package patch exists under a different name-prefix variant (see script docstring)." }
+check-patches = { cmd = "python check_patches_clean_apply.py", depends-on = ["generate-recipes", "check-orphaned-patches"] }
+check-deps = { cmd = "python check_dependency_compat.py", depends-on = ["generate-recipes"], description = "Solve one fake package containing every non-ROS dependency plus the mutex constraints to find pin conflicts before building anything. Run `python check_dependency_compat.py --stale` to list already-built artifacts that conflict with the current pins." }
+create_snapshot = { cmd = "vinca-snapshot -d [= distro =] -o rosdistro_snapshot.yaml" }
+[% if upload_target == "prefix" -%]
+upload = "rattler-build upload prefix -c [= channel_name =] --generate-attestation --skip-existing"
+[%- else -%]
+upload = "rattler-build upload anaconda -o [= channel_name =] -a $ANACONDA_API_TOKEN --force"
+[%- endif %]
+build_continue_on_failure = { cmd = "rattler-build build --recipe-dir ./recipes -m ./conda_build_config.yaml -c [= channel_url =] -c https://prefix.dev/conda-forge --continue-on-failure --skip-existing --channel-priority disabled", depends-on = ["generate-recipes"] }
+sort = "sh -lc 'vinca-sort-vinca-lists $@ vinca.yaml && vinca-sort-yaml-keys $@ pkg_additional_info.yaml robostack.yaml rosdistro_additional_recipes.yaml' --"
+
+[tasks.build]
+cmd = "rattler-build build --recipe-dir ./recipes -m ./conda_build_config.yaml -c [= channel_url =] -c https://prefix.dev/conda-forge --skip-existing --channel-priority disabled"
+depends-on = ["generate-recipes"]
+description = "Build all packages, from the ./recipes dir. This will skip already existing packages, so it can be used to build only a subset of packages by first removing the recipes of the packages you want to rebuild (see `pixi run remove-recipes`)."
+
+[tasks.build-ci]
+cmd = "rattler-build build -m ./conda_build_config.yaml -c [= channel_url =] -c https://prefix.dev/conda-forge"
+description = "rattler-build with this distribution's variant config and channels; used by .scripts/build_unix.sh and .scripts/build_win.bat, which append the recipe and output arguments."
+
+[tasks.build-up-to]
+cmd = "rattler-build build --recipe-dir ./recipes --up-to {{ PACKAGE }} -m ./conda_build_config.yaml -c [= channel_url =] -c https://prefix.dev/conda-forge --skip-existing"
+depends-on = ["generate-recipes"]
+args = [{ arg = "PACKAGE" }]
+description = "Build the dependency chain up to a package, from the ./recipes dir. Pass the package name as a positional argument with the `[= package_prefix =]` prefix, e.g. `pixi run build-up-to [= package_prefix =]nav2-smac-planner`."
+
+[tasks.remove-recipes]
+cmd = "rm -rf recipes_only_patch; rm -rf recipes; mkdir recipes"
+description = "Remove all generated recipes, before regenerating them."
+
+[tasks.build-one]
+cmd = "cp ./patch/{{ PACKAGE }}.*patch ./recipes/{{ PACKAGE }}/patch/; rattler-build build --recipe ./recipes/{{ PACKAGE }}/recipe.yaml -m ./conda_build_config.yaml -c [= channel_url =] -c https://prefix.dev/conda-forge --channel-priority disabled"
+args = [{ arg = "PACKAGE", default = "[= example_package =]" }]
+description = "Build a single package, from the ./recipes dir. Add the `[= package_prefix =]` prefix to the package name, e.g. `pixi run build-one [= example_package =]`."

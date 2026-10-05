@@ -1,0 +1,77 @@
+# Copier template for RoboStack ROS 2 distribution repositories.
+#
+# Instantiate:  copier copy --trust gh:RoboStack/ros-distro-template ros-<distro>
+# Update:       copier update --trust --defaults   (or let robostack-bot open the PR)
+#
+# Jinja uses [= var =] / [% if ... %] instead of {{ }} / {% %} so that GitHub
+# Actions expressions (${{ ... }}) and pixi task arguments ({{ PACKAGE }}) can be
+# written verbatim. Only files ending in .jinja are rendered; everything else is
+# copied as-is.
+
+_min_copier_version: "9.4"
+_subdirectory: template
+_templates_suffix: .jinja
+_envops:
+  block_start_string: "[%"
+  block_end_string: "%]"
+  variable_start_string: "[="
+  variable_end_string: "=]"
+  comment_start_string: "[#"
+  comment_end_string: "#]"
+  keep_trailing_newline: true
+
+# Seeded once when a distribution is created, then owned by the distribution.
+# Everything else in template/ is owned by the template: do not edit those files
+# in a distribution repository, change the template instead.
+_skip_if_exists:
+  - ci.yaml
+  - vinca.yaml
+  - vinca_pinning.yaml
+  - robostack.yaml
+  - pkg_additional_info.yaml
+  - rosdistro_additional_recipes.yaml
+  - packages-ignore.yaml
+
+distro:
+  type: str
+  help: ROS distribution name (as used by rosdistro), e.g. jazzy
+  validator: "[% if not distro.isidentifier() or distro != distro.lower() %]lowercase name required[% endif %]"
+
+package_prefix:
+  type: str
+  help: Primary package name prefix of the generated conda packages
+  default: "ros-[= distro =]-"
+
+channel_name:
+  type: str
+  help: Channel the distribution is published to
+  default: "robostack-[= distro =]"
+
+upload_target:
+  type: str
+  help: Where packages are uploaded
+  choices:
+    prefix.dev: prefix
+    anaconda.org: anaconda
+  default: prefix
+
+vinca_git:
+  type: str
+  help: vinca git repository
+  default: https://github.com/RoboStack/vinca.git
+
+vinca_rev:
+  type: str
+  help: vinca git revision
+  default: 5767846ab2557b4e358e11a5f07c7743df3ede4e
+
+# Computed values (not asked, not stored in the answers file).
+channel_url:
+  type: str
+  when: false
+  default: "[% if upload_target == 'prefix' %]https://prefix.dev/[= channel_name =][% else %]https://conda.anaconda.org/[= channel_name =][% endif %]"
+
+example_package:
+  type: str
+  when: false
+  default: "[= package_prefix =]ros-workspace"

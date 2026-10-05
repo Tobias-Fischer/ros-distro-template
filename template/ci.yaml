@@ -1,0 +1,10 @@
+# Temporary controls for the pull-request build (.github/workflows/testpr.yml).
+# This file is owned by the distribution; reset it once the PR is merged.
+
+# Ignore the PR build cache and rebuild everything.
+full_rebuild: false
+
+# Packages to drop from the PR build cache, e.g. after fixing a patch of an
+# already built package without bumping its build number. ROS package names
+# (dashes or underscores) or globs; both package name prefixes are matched.
+evict_cache: []

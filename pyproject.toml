@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "robostack-bot"
+version = "0.1.0"
+description = "Automation for the RoboStack ROS distribution repositories"
+requires-python = ">=3.11"
+dependencies = ["copier>=9.4", "pyyaml"]
+
+[project.scripts]
+robostack-bot = "robostack_bot.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["robostack_bot"]

@@ -1,0 +1,302 @@
+# AGENTS.md
+
+Working notes for future coding agents in the RoboStack ros-[= distro =] repo. `$DISTRO` below is `[= distro =]`.
+
+## Session defaults for this repo
+
+- Prefer fixing easy, low-risk build failures first (one-line CMake / include / standard-level fixes).
+- Do not stop to ask the maintainer to run commands; run build/debug loops directly.
+- Use checked-out sources in `.pixi` and `output/src_cache` when patching.
+- Use `./build_gap_report.py` to track build/recipe gaps across platforms:
+  - `Built package artifacts without matching recipe directory`: packages built in `output/<platform>` that are not represented as recipe folders.
+  - `Recipe directories without built artifact on this platform`: generated recipes that still need successful builds for that platform.
+- If a package is truly Linux-only, move it to Linux-only handling in `vinca.yaml` (or non-linux skip), instead of keeping ad-hoc macOS comments. Follow similar strategies for other platforms such as Windows.
+- For patch naming, keep one patch per package and use package-based naming (`patch/ros-$DISTRO-<pkg>.patch`) with no extra suffix variants.
+
+## Standard build loop
+
+```bash
+# single package (preferred for debugging)
+pixi run build-one ros-$DISTRO-<pkg>
+
+# broad pass when needed
+pixi run build_continue_on_failure
+```
+
+## Common fix patterns seen in this repo
+
+- Boost 1.88 breakages often need C++14 (`-std=c++14`) instead of `-std=c++11`.
+- Avoid linking to `Python::Python` on Apple for module-style targets; use:
+
+```cmake
+if( APPLE )
+  set_target_properties( ${_name} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup" )
+else()
+  target_link_libraries( ${_name} ${PYTHON_LIBRARIES} )
+endif()
+```
+
+- For gtest-related failures, prefer dependency or test-disable fixes over custom shims:
+  - add dependency via `patch/dependencies.yaml`, or
+  - disable tests when safe.
+- For rtabmap RViz plugin issues, force/confirm Qt5 discovery in CMake where needed.
+
+## Debug a failed build
+
+### 1. Find the work directory
+
+```bash
+tail -1 output/rattler-build-log.txt
+```
+
+### 2. Inspect full log
+
+Read `conda_build.log` in the work dir. Focus on:
+- compile errors
+- link errors
+- configure failures
+- patch failures
+- missing files
+
+### 3. Inspect build env
+
+Read `build_env.sh` in the work dir:
+- `PREFIX`
+- `BUILD_PREFIX`
+- `SRC_DIR`
+- `RECIPE_DIR`
+
+### 4. Check fetched source metadata
+
+```bash
+cat .source_info.json | jq .
+```
+
+### 5. Investigate by failure class
+
+- Missing headers: check `requirements.host`; verify under `$PREFIX/include`.
+- Undefined symbols: check host deps, `$PREFIX/lib`, linker flags.
+- Configure failures: inspect flags in `conda_build.sh`; rerun manually with verbosity.
+- Patch failures: refresh patch against current source revision.
+- Relocatability issues: inspect hardcoded prefixes/rpaths.
+
+### 6. Reproduce interactively
+
+```bash
+cd <work-directory>
+source build_env.sh
+bash -x conda_build.sh 2>&1 | less
+```
+
+### 7. Rebuild package
+
+```bash
+pixi run build-one ros-$DISTRO-<pkg>
+```
+
+## Create a patch from build-directory edits
+
+```bash
+WORK_DIR=$(tail -1 output/rattler-build-log.txt)
+cd "$WORK_DIR"
+
+# preview first
+rattler-build create-patch --directory . --name <patch-name> --dry-run
+
+# with excludes if needed
+rattler-build create-patch \
+  --directory . \
+  --name <patch-name> \
+  --exclude "*.o,*.so,*.dylib,*.a,*.pyc,__pycache__,build/" \
+  --dry-run
+
+# generate
+rattler-build create-patch \
+  --directory . \
+  --name <patch-name> \
+  --exclude "*.o,*.so,*.dylib,*.a,*.pyc,__pycache__,build/"
+```
+
+Then move/merge patch into repo package patch file and ensure recipe uses it.
+
+## Validate that patches still apply
+
+Use the patch checker before/after large patch edits:
+
+```bash
+pixi run check-patches
+```
+
+For faster iteration on one package patch, run the script directly with a recipe filter:
+
+```bash
+# prepare + check only one recipe
+python check_patches_clean_apply.py --recipe ros-$DISTRO-<pkg>
+
+# prepare only (no build), useful while editing
+python check_patches_clean_apply.py --dry --recipe ros-$DISTRO-<pkg>
+
+# multiple focused recipes
+python check_patches_clean_apply.py --recipe ros-$DISTRO-<pkg1> --recipe ros-$DISTRO-<pkg2>
+```
+
+What it does:
+- scans all `recipes/**/recipe.yaml`
+- keeps only recipes that declare `source.patches`
+- creates `recipes_only_patch/` with minimal patch-check recipes
+- runs patch application checks recipe-by-recipe and prints a pass/fail summary
+
+## Patch placement and recipe wiring
+
+- Canonical patch location: `patch/ros-$DISTRO-<pkg>.patch`
+- Keep recipe copy in `recipes/ros-$DISTRO-<pkg>/patch/` if this repo flow expects it.
+- Ensure `recipes/ros-$DISTRO-<pkg>/recipe.yaml` has:
+
+```yaml
+source:
+  patches:
+    - patch/ros-$DISTRO-<pkg>.patch
+```
+
+## Parallelization and dependency-aware scheduling
+
+It is worth splitting work across multiple agents, but only for independent packages.
+
+Rules:
+- Do not build dependent packages in parallel.
+- Infer dependency relationships from `recipes/ros-$DISTRO-<pkg>/recipe.yaml` (`requirements.host` and `requirements.run`).
+- If package A depends on package B (for example `rosmon` -> `rosmon-core`), build/fix B first.
+- Run parallel lanes only for packages that do not depend on each other.
+- If unsure, serialize the builds.
+
+## Template-owned files (ros-distro-template)
+
+This repository is instantiated from the RoboStack distribution template with
+[copier](https://copier.readthedocs.io); `.copier-answers.yml` records the template
+version and this distribution's answers.
+
+- Template-owned (do not edit here; change the template, robostack-bot then opens
+  an update PR in every distribution): CI workflows, `.scripts/`, `pixi.toml`,
+  `README.md`, `AGENTS.md`, the Python tools and the shared `tests/` smoke tests.
+- Distribution-owned: `vinca.yaml`, `vinca_pinning.yaml`, `robostack.yaml`,
+  `pkg_additional_info.yaml`, `rosdistro_additional_recipes.yaml`,
+  `packages-ignore.yaml`, `ci.yaml`, `patch/`, other `tests/` files, and the generated
+  `rosdistro_snapshot.yaml`, `conda_build_config.yaml` and `pixi.lock`.
+- Re-render after a template change: `pixi exec copier update --trust --defaults`
+  (or comment `@robostack-bot rerender` on a PR/issue).
+- Port patches only for an existing compatible package, using
+  `patch/ros-$DISTRO-<pkg>.patch` and matching recipe wiring; do not copy a patch
+  solely because its filename exists in another distribution.
+
+## Inspect a built conda package
+
+```bash
+find output/ -name "*<package-name>*" -type f \( -name "*.conda" -o -name "*.tar.bz2" \)
+```
+
+For `.conda` artifacts:
+
+```bash
+TMPDIR=$(mktemp -d)
+cd "$TMPDIR"
+unzip -q <package.conda>
+zstd -d < pkg-*.tar.zst | tar -xvf -
+zstd -d < info-*.tar.zst | tar -xvf -
+```
+
+Check:
+- `info/index.json` (deps/build string)
+- `info/paths.json` (installed files)
+- binaries/libs/rpaths (`otool -L` on macOS)
+- hardcoded prefixes in text metadata
+
+## `vinca.yaml` maintenance guidelines
+
+Three distinct ways to exclude a package (vinca revision pinned in `pixi.toml`; re-check `vinca/main.py` + `vinca/resolve.py` if that pin moves):
+
+1. `packages_select_by_deps`, wrapped in `if: not <platform> then: [...]` — the primary way to exclude a package's own recipe. `get_selected_packages` adds every name here to `selected_packages` unconditionally, so simply not listing it for a platform keeps its recipe from being generated.
+2. `packages_skip_by_deps` only affects transitive pull-in (`ignore_pkgs` passed to `distro.get_depends()`). It does not stop a package listed directly in `packages_select_by_deps`.
+3. `packages_remove_from_deps` is checked by `resolve.py::should_skip_pkg` both for a package's own recipe generation and when resolving other packages' host/run dependency names — using it strips both simultaneously, inseparably. Wrong tool if another selected package legitimately needs the dependency; use (1)+(2) instead.
+
+- Add package seeds under `packages_select_by_deps` using ROS package names (dash/underscore accepted).
+- Use platform conditions for Linux-only packages; avoid temporary macOS comment blocks.
+- Keep `packages_skip_by_deps` and `packages_remove_from_deps` coherent with platform constraints.
+- When `build_gap_report.py` shows built artifacts without recipe directories, add those package seeds to `vinca.yaml`.
+- After `vinca.yaml` edits, regenerate recipes before expecting `build_gap_report.py` results to change.
+
+## Check dependency pins before building anything
+
+Incompatible pins (mutex `run_constraints` in `vinca.yaml`, the rendered
+`conda_build_config.yaml`, and what conda-forge actually ships) used to surface only
+after hundreds of packages had been built. `check_dependency_compat.py` finds them up
+front by solving one fake package that requires every non-ROS `host`/`run` dependency
+of the generated recipes plus the mutex constraints; nothing is built.
+
+```bash
+# regenerate recipes, then solve the fake package for the current platform
+pixi run check-deps
+
+# other platforms / options (recipes must already be generated)
+pixi run python check_dependency_compat.py --platform linux-64
+pixi run python check_dependency_compat.py --no-migrations --json conflicts.json
+```
+
+What it reports:
+- `PIN MISMATCH`: a mutex `run_constraints` entry contradicts the rendered pin (e.g. mutex
+  `vtk 9.6.2.*` while `vinca_pinning.yaml` applies `vtk970`). Fix `vinca.yaml` or the
+  migration list; never edit `conda_build_config.yaml` by hand.
+- Per conflicting package: which recipes need it, which pin it clashes with (bisected
+  when it only fails in combination), the solver explanation, and the conda-forge
+  migration status of its feedstock (done / in-pr / awaiting-parents). That status list
+  is the conda-forge to-do list; "no migration" means the feedstock simply needs a rebuild.
+- Exit code 1 when anything conflicts, so it can gate CI.
+
+### Rebuild only the packages built with an outdated pin
+
+```bash
+# local artifacts (output/<platform>) built against pins that no longer match
+pixi run python check_dependency_compat.py --stale
+# only violations of the mutex run_constraints (ignore conda_build_config.yaml drift)
+pixi run python check_dependency_compat.py --stale --mutex-only
+# the published channel
+pixi run python check_dependency_compat.py --stale --repodata [= channel_url =]
+# delete the stale local artifacts and re-index; `pixi run build` then rebuilds just those
+pixi run python check_dependency_compat.py --stale --delete
+```
+
+When the stale builds are already on the channel, the report prints a
+`pkg_additional_info.yaml` build-number snippet for exactly those packages plus a
+`mutex_package: build_number:` bump for `vinca.yaml` (so the mutex is re-published with
+the new `run_constraints` while keeping its version), and the `anaconda remove` commands
+for the old files. Only those packages are then regenerated and rebuilt.
+
+## Local contribution workflow (RoboStack)
+
+```bash
+pixi run build
+```
+
+## Full rebuilds
+For full rebuilds also remember:
+- refresh snapshot: `pixi run create_snapshot`
+- update the pins: `conda_build_config.yaml` is generated from `vinca_pinning.yaml` (exact
+  `conda-forge-pinning` version + list of applied migrations + local overrides). Run
+  `pixi run vinca-pinning-update --render` to move to the latest pinning and select the
+  migrations that are complete for our dependencies (status: https://conda-forge.org/status/),
+  or edit `vinca_pinning.yaml` and run `pixi run vinca-pinning-render`. Never edit
+  `conda_build_config.yaml` directly.
+- keep `mutex_package.run_constraints` in `vinca.yaml` consistent with the rendered pins
+  and verify with `pixi run check-deps` before starting the rebuild.
+- bump `build_number`
+- bump mutex minor and update hardcoded mutex refs where needed
+- clear stale `pkg_additional_info.yaml` build-number overrides unless intentional
+- remember that in CI there is a build cache: if you fix a problem in an already built package, add it to `evict_cache` in `ci.yaml` (or set `full_rebuild: true` there for a full rebuild), and reset `ci.yaml` once the PR is merged
+
+## Practical triage order
+
+1. Build a failing package directly.
+2. Apply smallest viable source or recipe fix.
+3. Update package patch file (package-named).
+4. Rebuild same package.
+5. Move on immediately if it becomes complex; prioritize easy wins.
+6. Revisit hard failures after reducing the failure queue.
