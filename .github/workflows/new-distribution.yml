@@ -70,7 +70,9 @@ jobs:
       - uses: actions/upload-artifact@v6
         with:
           name: ros-${{ inputs.name }}
-          path: ros-${{ inputs.name }}
+          path: |
+            ros-${{ inputs.name }}
+            !ros-${{ inputs.name }}/.pixi
           include-hidden-files: true
       - name: Create the repository
         if: inputs.create_repo
