@@ -16,6 +16,9 @@ on:
         type: choice
         options: [prefix, anaconda]
         default: prefix
+      owner:
+        description: Owner of the source repository and of the new repository
+        default: RoboStack
       create_repo:
         description: Create RoboStack/ros-<name> and push (otherwise only upload an artifact)
         type: boolean
@@ -30,19 +33,19 @@ jobs:
     steps:
       - name: Bot token
         id: app
-        if: inputs.create_repo
+        if: vars.ROBOSTACK_BOT_APP_ID != '' && inputs.create_repo
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.ROBOSTACK_BOT_APP_ID }}
           private-key: ${{ secrets.ROBOSTACK_BOT_PRIVATE_KEY }}
-          owner: RoboStack
+          owner: ${{ inputs.owner }}
       - uses: actions/checkout@v6
         with:
           path: ros-distro-template
           fetch-depth: 0
       - uses: actions/checkout@v6
         with:
-          repository: RoboStack/ros-${{ inputs.source }}
+          repository: ${{ inputs.owner }}/ros-${{ inputs.source }}
           path: source
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
@@ -72,9 +75,10 @@ jobs:
       - name: Create the repository
         if: inputs.create_repo
         env:
-          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GH_TOKEN: ${{ steps.app.outputs.token || secrets.GHA_PAT || github.token }}
           NAME: ${{ inputs.name }}
+          OWNER: ${{ inputs.owner }}
         run: |
-          gh repo create "RoboStack/ros-$NAME" --public --description "RoboStack packages for ROS $NAME"
-          git -C "ros-$NAME" push "https://x-access-token:${GH_TOKEN}@github.com/RoboStack/ros-$NAME.git" main
-          gh issue create --repo "RoboStack/ros-$NAME" --title "Bootstrap checklist" --body-file "$RUNNER_TEMP/checklist.md"
+          gh repo create "$OWNER/ros-$NAME" --public --description "RoboStack packages for ROS $NAME"
+          git -C "ros-$NAME" push "https://x-access-token:${GH_TOKEN}@github.com/$OWNER/ros-$NAME.git" main
+          gh issue create --repo "$OWNER/ros-$NAME" --title "Bootstrap checklist" --body-file "$RUNNER_TEMP/checklist.md"

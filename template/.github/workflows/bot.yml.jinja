@@ -13,7 +13,10 @@
 # The bot logic lives in [= template_url =] (robostack_bot/).
 # PRs are opened with the robostack-bot GitHub App token (vars.ROBOSTACK_BOT_APP_ID +
 # secrets.ROBOSTACK_BOT_PRIVATE_KEY), falling back to secrets.GHA_PAT, so that
-# testpr.yml runs on them (PRs opened with GITHUB_TOKEN don't trigger workflows).
+# testpr.yml runs on them. Without either, GITHUB_TOKEN is used: that needs
+# "Allow GitHub Actions to create and approve pull requests" in the repository
+# settings, CI won't run on those PRs, and upstream-to-template can't push to the
+# template repository.
 name: robostack-bot
 
 on:
@@ -133,7 +136,7 @@ jobs:
         with:
           repository: [= template_repo =]
           path: .template-src
-          token: ${{ steps.app.outputs.token || secrets.GHA_PAT }}
+          token: ${{ steps.app.outputs.token || secrets.GHA_PAT || github.token }}
 
       - name: robostack-bot ${{ matrix.command }}
         id: bot
@@ -156,7 +159,7 @@ jobs:
         if: steps.bot.outputs.changed == 'true' && matrix.command != 'upstream-to-template'
         uses: peter-evans/create-pull-request@v7
         with:
-          token: ${{ steps.app.outputs.token || secrets.GHA_PAT }}
+          token: ${{ steps.app.outputs.token || secrets.GHA_PAT || github.token }}
           branch: bot/${{ matrix.command }}
           delete-branch: true
           commit-message: "${{ steps.bot.outputs.title }}"
@@ -169,7 +172,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           path: .template-src
-          token: ${{ steps.app.outputs.token || secrets.GHA_PAT }}
+          token: ${{ steps.app.outputs.token || secrets.GHA_PAT || github.token }}
           branch: bot/upstream-to-template-[= distro =]
           commit-message: "${{ steps.bot.outputs.title }}"
           title: "${{ steps.bot.outputs.title }}"

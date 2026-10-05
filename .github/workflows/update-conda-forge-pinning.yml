@@ -8,6 +8,13 @@ on:
   schedule:
     - cron: "37 2 * * 1"
   workflow_dispatch:
+    inputs:
+      distros:
+        description: Space-separated distributions whose dependencies count (default all in distros.yaml)
+        required: false
+      owner:
+        description: Use the distribution repositories of this owner instead (e.g. your forks)
+        required: false
 
 permissions:
   contents: read
@@ -15,9 +22,13 @@ permissions:
 jobs:
   update-conda-forge-pinning:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Bot token
         id: app
+        if: vars.ROBOSTACK_BOT_APP_ID != ''
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ vars.ROBOSTACK_BOT_APP_ID }}
@@ -26,10 +37,15 @@ jobs:
         with:
           path: ros-distro-template
       - name: Check out the distributions
+        env:
+          SELECTED: ${{ inputs.distros }}
+          OWNER: ${{ inputs.owner }}
         run: |
           # yq is preinstalled on the GitHub-hosted Ubuntu runners.
-          for distro in $(yq 'keys | .[]' ros-distro-template/distros.yaml); do
-            git clone --quiet --depth 1 "https://github.com/RoboStack/ros-$distro.git" "ros-$distro"
+          for distro in ${SELECTED:-$(yq 'keys | .[]' ros-distro-template/distros.yaml)}; do
+            repo=$(yq ".$distro.repo" ros-distro-template/distros.yaml)
+            [ -n "$OWNER" ] && repo="$OWNER/${repo#*/}"
+            git clone --quiet --depth 1 "https://github.com/$repo.git" "ros-$distro"
           done
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
@@ -46,7 +62,7 @@ jobs:
         uses: peter-evans/create-pull-request@v7
         with:
           path: ros-distro-template
-          token: ${{ steps.app.outputs.token }}
+          token: ${{ steps.app.outputs.token || secrets.GHA_PAT || github.token }}
           branch: bot/update-conda-forge-pinning
           delete-branch: true
           commit-message: ${{ steps.bot.outputs.title }}

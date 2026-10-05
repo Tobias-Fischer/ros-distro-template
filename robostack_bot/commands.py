@@ -350,8 +350,9 @@ def new_distro(
     """
     if dest.exists() and any(dest.iterdir()):
         raise SystemExit(f"{dest} is not empty")
-    source_answers = tpl.user_answers(tpl.read_answers(source_repo))
-    source = source_answers["distro"]
+    # The source only provides vinca.yaml & co.; it doesn't need to be instantiated
+    # from the template itself.
+    source = yaml.safe_load((source_repo / "vinca.yaml").read_text())["ros_distro"]
     data = {"distro": distro, **(answers or {})}
 
     for name in SEEDED_FROM_SOURCE:
