@@ -75,3 +75,8 @@ example_package:
   type: str
   when: false
   default: "[= package_prefix =]ros-workspace"
+
+template_url:
+  type: str
+  when: false
+  default: https://github.com/RoboStack/ros-distro-template

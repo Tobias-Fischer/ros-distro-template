@@ -1,0 +1,94 @@
+# Push a template version to every distribution as a pull request
+# (`copier update` + `pixi lock`, see robostack_bot.commands.rerender).
+#
+# Runs when a release is published, or manually (optionally as a dry run that only
+# uploads the would-be changes as an artifact).
+name: Propagate template
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Template tag/commit to propagate (default latest tag)
+        required: false
+      distros:
+        description: Space-separated distributions (default all in distros.yaml)
+        required: false
+      dry_run:
+        description: Only upload the diffs, do not open PRs
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      distros: ${{ steps.plan.outputs.distros }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: plan
+        env:
+          SELECTED: ${{ inputs.distros }}
+        run: |
+          # yq is preinstalled on the GitHub-hosted Ubuntu runners.
+          selected="${SELECTED:-$(yq 'keys | join(" ")' distros.yaml)}"
+          distros=$(for d in $selected; do repo=$(yq ".$d.repo" distros.yaml); echo "{\"distro\":\"$d\",\"repo\":\"$repo\"}"; done | jq -sc .)
+          echo "distros=$distros" >> "$GITHUB_OUTPUT"
+
+  propagate:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.distros) }}
+    steps:
+      - name: Bot token
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ROBOSTACK_BOT_APP_ID }}
+          private-key: ${{ secrets.ROBOSTACK_BOT_PRIVATE_KEY }}
+          owner: RoboStack
+      - uses: actions/checkout@v6
+        with:
+          repository: ${{ matrix.repo }}
+          token: ${{ steps.app.outputs.token }}
+          fetch-depth: 0
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.75.0
+          run-install: false
+      - uses: astral-sh/setup-uv@v7
+      - name: copier update
+        id: bot
+        env:
+          REF: ${{ inputs.ref || github.event.release.tag_name }}
+        run: |
+          args=()
+          [ -n "$REF" ] && args+=(--vcs-ref "$REF")
+          uvx --from "git+https://github.com/${GITHUB_REPOSITORY}@${REF:-main}" \
+            robostack-bot --summary "$RUNNER_TEMP/summary.md" rerender "${args[@]}"
+          git diff > "$RUNNER_TEMP/${{ matrix.distro }}.diff"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: template-update-${{ matrix.distro }}
+          path: |
+            ${{ runner.temp }}/${{ matrix.distro }}.diff
+            ${{ runner.temp }}/summary.md
+      - name: Open or update the pull request
+        if: steps.bot.outputs.changed == 'true' && !inputs.dry_run
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ steps.app.outputs.token }}
+          branch: bot/template-update
+          delete-branch: true
+          commit-message: ${{ steps.bot.outputs.title }}
+          title: ${{ steps.bot.outputs.title }}
+          body-path: ${{ runner.temp }}/summary.md
+          labels: robostack-bot,${{ steps.bot.outputs.labels }}
