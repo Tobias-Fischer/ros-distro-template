@@ -4,7 +4,7 @@
     robostack-bot drift            [--repo .] [--template SRC]
     robostack-bot upstream         --template-dir DIR [--repo .]
     robostack-bot update-snapshot  [--repo .]
-    robostack-bot update-pinning   [--repo .] [--no-check-deps]
+    robostack-bot update-pinning   --template-dir DIR DISTRO_DIR...   (template repository)
     robostack-bot check-stale      [--repo .]
     robostack-bot new-distro NAME  --from DIR --dest DIR [--template SRC] [--set key=value ...]
     robostack-bot parse-comment    --body TEXT --association ROLE
@@ -53,9 +53,9 @@ def main(argv: list[str] | None = None) -> int:
         "--template-dir", type=Path, required=True
     )
     add("update-snapshot", help="refresh rosdistro_snapshot.yaml")
-    add("update-pinning", help="move to the latest conda-forge pinning").add_argument(
-        "--no-check-deps", action="store_true"
-    )
+    up = sub.add_parser("update-pinning", help="move the shared pinning to the latest conda-forge pinning")
+    up.add_argument("--template-dir", type=Path, default=Path("."))
+    up.add_argument("distros", nargs="+", type=Path, help="checkouts of all distributions")
     add("check-stale", help="list published packages built against outdated pins")
     nd = add("new-distro", help="instantiate a new distribution")
     nd.add_argument("name")
@@ -88,7 +88,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "update-snapshot":
         result = commands.update_snapshot(args.repo.resolve())
     elif args.command == "update-pinning":
-        result = commands.update_pinning(args.repo.resolve(), check_deps=not args.no_check_deps)
+        result = commands.update_pinning(args.template_dir.resolve(), [d.resolve() for d in args.distros])
     elif args.command == "check-stale":
         result = commands.check_stale(args.repo.resolve())
     else:  # new-distro

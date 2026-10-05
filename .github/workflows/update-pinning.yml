@@ -1,0 +1,55 @@
+# Weekly: move the shared template/vinca_pinning.yaml to the latest conda-forge
+# pinning (migrations selected for the dependencies of all distributions) and open
+# a PR here. Releasing the template then rolls it out to every distribution, where
+# the update PR re-renders conda_build_config.yaml and runs check-deps.
+name: Update conda-forge pinning
+
+on:
+  schedule:
+    - cron: "37 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-pinning:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bot token
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.ROBOSTACK_BOT_APP_ID }}
+          private-key: ${{ secrets.ROBOSTACK_BOT_PRIVATE_KEY }}
+      - uses: actions/checkout@v6
+        with:
+          path: ros-distro-template
+      - name: Check out the distributions
+        run: |
+          # yq is preinstalled on the GitHub-hosted Ubuntu runners.
+          for distro in $(yq 'keys | .[]' ros-distro-template/distros.yaml); do
+            git clone --quiet --depth 1 "https://github.com/RoboStack/ros-$distro.git" "ros-$distro"
+          done
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.75.0
+          manifest-path: ros-distro-template/pixi.toml
+      - name: robostack-bot update-pinning
+        id: bot
+        run: |
+          pixi run --manifest-path ros-distro-template/pixi.toml robostack-bot \
+            --summary "$RUNNER_TEMP/summary.md" \
+            update-pinning --template-dir ros-distro-template $(ls -d ros-*/ | grep -v ros-distro-template)
+      - name: Open or update the pull request
+        if: steps.bot.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          path: ros-distro-template
+          token: ${{ steps.app.outputs.token }}
+          branch: bot/update-pinning
+          delete-branch: true
+          commit-message: ${{ steps.bot.outputs.title }}
+          title: ${{ steps.bot.outputs.title }}
+          body-path: ${{ runner.temp }}/summary.md
+          labels: robostack-bot

@@ -18,7 +18,8 @@ import yaml
 
 from . import template as tpl
 
-COMMANDS = ("rerender", "update-snapshot", "update-pinning", "check-stale", "drift", "upstream")
+# Commands a distribution can run (comments, issues, workflow_dispatch).
+COMMANDS = ("rerender", "update-snapshot", "check-stale", "drift", "upstream")
 
 
 @dataclass
@@ -68,11 +69,18 @@ def rerender(repo: Path, vcs_ref: str | None = None) -> Result:
     files = changed_files(repo)
     if "pixi.toml" in files:
         run(["pixi", "lock"], repo)
-        files = changed_files(repo)
+    deps_ok, deps_report = True, []
+    if "vinca_pinning.yaml" in files:
+        # The pinning is shared; each distribution renders its own
+        # conda_build_config.yaml and checks it against its own recipes.
+        run(["pixi", "run", "vinca-pinning-render"], repo)
+        deps_ok, deps_report = check_deps(repo)
+    files = changed_files(repo)
     after = tpl.read_answers(repo).get("_commit")
     rejects = [f for f in files if f.endswith(".rej")]
     lines = [f"Re-rendered from the template: `{before}` → `{after}`.", ""]
     lines += [f"- `{f}`" for f in files] or ["No changes."]
+    lines += deps_report
     if rejects:
         lines += [
             "",
@@ -80,13 +88,28 @@ def rerender(repo: Path, vcs_ref: str | None = None) -> Result:
             "so the update could not be merged automatically. Resolve the `.rej` files "
             "(and consider `@robostack-bot upstream` to move the edit into the template):",
         ] + [f"- `{f}`" for f in rejects]
+    labels = (["template-conflict"] if rejects else []) + ([] if deps_ok else ["pinning-conflict"])
     return Result(
         f"Update to template {after}",
         "\n".join(lines),
         changed=bool(files),
-        ok=not rejects,
-        labels=["template-conflict"] if rejects else [],
+        ok=not rejects and deps_ok,
+        labels=labels,
     )
+
+
+def check_deps(repo: Path) -> tuple[bool, list[str]]:
+    """`pixi run check-deps` (pin conflicts against this distribution's recipes)."""
+    deps = run(["pixi", "run", "check-deps"], repo, check=False)
+    ok = deps.returncode == 0
+    return ok, [
+        "",
+        f"### `pixi run check-deps`: {'no conflicts' if ok else 'conflicts found'}",
+        "",
+        "```",
+        tail(deps.stdout + deps.stderr, 120),
+        "```",
+    ]
 
 
 # --------------------------------------------------------------------------- #
@@ -214,35 +237,39 @@ def update_snapshot(repo: Path) -> Result:
 # --------------------------------------------------------------------------- #
 # update-pinning
 # --------------------------------------------------------------------------- #
-def update_pinning(repo: Path, check_deps: bool = True) -> Result:
-    proc = run(["pixi", "run", "vinca-pinning-update", "--render"], repo, check=False)
-    if proc.returncode != 0:
-        return Result("Pinning update failed", f"```\n{tail(proc.stdout + proc.stderr)}\n```", ok=False)
-    files = changed_files(repo)
-    if not files:
-        return Result("Pinning is up to date", "vinca_pinning.yaml already uses the latest conda-forge pinning.")
-    lines = ["Moved to the latest conda-forge pinning (`pixi run vinca-pinning-update --render`).", ""]
-    lines += [f"- `{f}`" for f in files]
-    ok = True
-    if check_deps:
-        deps = run(["pixi", "run", "check-deps"], repo, check=False)
-        ok = deps.returncode == 0
-        lines += [
-            "",
-            f"### `pixi run check-deps`: {'no conflicts' if ok else 'conflicts found'}",
-            "",
-            "```",
-            tail(deps.stdout + deps.stderr, 120),
-            "```",
-        ]
-        # check-deps regenerates recipes/, which is git-ignored; nothing else to undo.
-    return Result(
-        "Update conda-forge pinning",
-        "\n".join(lines),
-        changed=True,
-        ok=ok,
-        labels=[] if ok else ["pinning-conflict"],
-    )
+def update_pinning(template_dir: Path, distro_dirs: list[Path]) -> Result:
+    """Move the shared template/vinca_pinning.yaml to the latest conda-forge pinning.
+
+    Runs in the template repository. Migrations are selected for the union of the
+    dependencies of all distributions (their recipes are generated with vinca); the
+    distributions then pick the change up through the template update PR, which
+    renders their conda_build_config.yaml and runs check-deps.
+    """
+    from vinca import pinning  # only needed here, keeps the other commands vinca-free
+
+    config = template_dir / "template" / "vinca_pinning.yaml"
+    before = config.read_text()
+    dependencies: set[str] = set()
+    for distro_dir in distro_dirs:
+        print(f"Collecting dependencies of {distro_dir.name}", flush=True)
+        dependencies |= pinning.dependencies_from_vinca(distro_dir, pinning.DEFAULT_PLATFORMS)
+    version, migrations, reports = pinning.update_pinning(config, dependencies=dependencies)
+    if config.read_text() == before:
+        return Result("Pinning is up to date", f"Already on conda-forge-pinning {version}.")
+    lines = [
+        f"Moved `template/vinca_pinning.yaml` to conda-forge-pinning `{version}`, selecting "
+        f"migrations for the dependencies of {', '.join(d.name for d in distro_dirs)}.",
+        "",
+        "Applied migrations: " + (", ".join(f"`{m}`" for m in migrations) or "none"),
+        "",
+    ]
+    lines += [f"- `{name}`: {report}" for name, report in reports]
+    lines += [
+        "",
+        "After merging and releasing, every distribution gets a template update PR that "
+        "re-renders its `conda_build_config.yaml` and runs `check-deps`.",
+    ]
+    return Result("Update conda-forge pinning", "\n".join(lines), changed=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -268,7 +295,9 @@ def check_stale(repo: Path) -> Result:
 # --------------------------------------------------------------------------- #
 # new-distro
 # --------------------------------------------------------------------------- #
-SEEDED_FROM_SOURCE = ("vinca.yaml", "vinca_pinning.yaml", "robostack.yaml", "packages-ignore.yaml", "pkg_additional_info.yaml")
+# Distribution-owned files seeded from the source distribution; everything else
+# (including robostack.yaml, packages-ignore.yaml and vinca_pinning.yaml) is shared.
+SEEDED_FROM_SOURCE = ("vinca.yaml", "pkg_additional_info.yaml")
 
 
 def _strip_build_numbers(text: str) -> str:
@@ -308,9 +337,6 @@ def new_distro(
     source_answers = tpl.user_answers(tpl.read_answers(source_repo))
     source = source_answers["distro"]
     data = {"distro": distro, **(answers or {})}
-    for key in ("vinca_git", "vinca_rev"):
-        data.setdefault(key, source_answers.get(key))
-    data = {k: v for k, v in data.items() if v is not None}
 
     for name in SEEDED_FROM_SOURCE:
         src = source_repo / name
@@ -350,11 +376,15 @@ ALLOWED_ASSOCIATIONS = {"OWNER", "MEMBER", "COLLABORATOR"}
 _MENTION = re.compile(r"^\s*@robostack-bot,?\s+(?:please\s+)?([a-z-]+)\b", re.IGNORECASE | re.MULTILINE)
 
 
+_ISSUE_FORM = re.compile(r"^###\s*Command\s*\n+\s*([a-z-]+)", re.IGNORECASE | re.MULTILINE)
+
+
 def parse_comment(body: str, association: str) -> str | None:
-    """The command requested by an issue/PR comment, if the author may run it."""
+    """The command requested by a comment (`@robostack-bot <command>`) or by the
+    "robostack-bot command" issue form, if the author may run it."""
     if association.upper() not in ALLOWED_ASSOCIATIONS:
         return None
-    match = _MENTION.search(body or "")
+    match = _MENTION.search(body or "") or _ISSUE_FORM.search(body or "")
     if not match:
         return None
     command = match.group(1).lower()

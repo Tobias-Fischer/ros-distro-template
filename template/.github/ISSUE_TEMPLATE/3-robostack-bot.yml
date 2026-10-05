@@ -1,0 +1,42 @@
+name: robostack-bot command
+description: Ask robostack-bot to run a maintenance task (maintainers only)
+title: "robostack-bot: "
+labels: ["robostack-bot"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        robostack-bot picks up this issue, runs the command, replies with the result
+        and closes the issue. Commands that change files open (or update) a pull
+        request on a `bot/<command>` branch. Only owners, members and collaborators
+        can run commands; for everyone else the issue is ignored.
+
+        You can also comment `@robostack-bot <command>` on any issue or pull request.
+
+        | command | what it does |
+        |---|---|
+        | `rerender` | Update this repository to the latest template version (`copier update`, then `pixi lock`; re-renders `conda_build_config.yaml` and runs `check-deps` when the shared pinning changed). Opens a PR. |
+        | `update-snapshot` | Refresh `rosdistro_snapshot.yaml` to the latest rosdistro release (`pixi run create_snapshot`). Opens a PR listing the version bumps. Also runs weekly. |
+        | `check-stale` | List packages on the channel that were built against pins that no longer match (`check_dependency_compat.py --stale`), with the `pkg_additional_info.yaml` build-number snippet to rebuild them. Replies only. |
+        | `drift` | List template-owned files that were edited by hand in this repository. Replies only. |
+        | `upstream` | Move those hand edits into the template: opens a PR in RoboStack/ros-distro-template. |
+
+        The conda-forge pinning (`vinca_pinning.yaml`) is shared by all distributions and
+        updated in the template repository; it arrives here with the next `rerender`.
+  - type: dropdown
+    id: command
+    attributes:
+      label: Command
+      options:
+        - rerender
+        - update-snapshot
+        - check-stale
+        - drift
+        - upstream
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Optional context (not read by the bot).

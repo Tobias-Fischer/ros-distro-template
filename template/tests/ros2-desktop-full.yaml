@@ -4,4 +4,4 @@ tests:
     - ros2 pkg prefix desktop_full
     requirements:
       run:
-        - ros-[= distro =]-ros2pkg
+        - ros2-ros2pkg

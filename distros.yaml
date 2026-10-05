@@ -7,13 +7,7 @@ rolling:
   repo: RoboStack/ros-rolling
   answers:
     distro: rolling
-    package_prefix: ros2-
-    channel_name: robostack-rolling
     upload_target: prefix
-    # TEMPORARY: RoboStack/vinca@1f1dca5 (before the rosdistro-cache-snapshot
-    # feature) + the raw.githubusercontent.com tag-URL fix (RoboStack/vinca#156).
-    vinca_git: https://github.com/Tobias-Fischer/vinca.git
-    vinca_rev: 9e44663eaf17a1a7ae698e3140ff095a78e849e7
 
 humble:
   repo: RoboStack/ros-humble
@@ -21,8 +15,6 @@ humble:
     distro: humble
     channel_name: robostack-staging
     upload_target: anaconda
-    vinca_git: https://github.com/Tobias-Fischer/vinca.git
-    vinca_rev: 9e44663eaf17a1a7ae698e3140ff095a78e849e7
 
 jazzy:
   repo: RoboStack/ros-jazzy
@@ -35,7 +27,6 @@ kilted:
   answers:
     distro: kilted
     upload_target: anaconda
-    vinca_rev: 5104cd9
 
 lyrical:
   repo: RoboStack/ros-lyrical

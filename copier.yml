@@ -19,6 +19,8 @@ _envops:
   comment_start_string: "[#"
   comment_end_string: "#]"
   keep_trailing_newline: true
+  trim_blocks: true
+  lstrip_blocks: true
 
 # Seeded once when a distribution is created, then owned by the distribution.
 # Everything else in template/ is owned by the template: do not edit those files
@@ -26,21 +28,13 @@ _envops:
 _skip_if_exists:
   - ci.yaml
   - vinca.yaml
-  - vinca_pinning.yaml
-  - robostack.yaml
   - pkg_additional_info.yaml
   - rosdistro_additional_recipes.yaml
-  - packages-ignore.yaml
 
 distro:
   type: str
   help: ROS distribution name (as used by rosdistro), e.g. jazzy
   validator: "[% if not distro.isidentifier() or distro != distro.lower() %]lowercase name required[% endif %]"
-
-package_prefix:
-  type: str
-  help: Primary package name prefix of the generated conda packages
-  default: "ros-[= distro =]-"
 
 channel_name:
   type: str
@@ -55,16 +49,6 @@ upload_target:
     anaconda.org: anaconda
   default: prefix
 
-vinca_git:
-  type: str
-  help: vinca git repository
-  default: https://github.com/RoboStack/vinca.git
-
-vinca_rev:
-  type: str
-  help: vinca git revision
-  default: 5767846ab2557b4e358e11a5f07c7743df3ede4e
-
 # Computed values (not asked, not stored in the answers file).
 channel_url:
   type: str
@@ -74,7 +58,7 @@ channel_url:
 example_package:
   type: str
   when: false
-  default: "[= package_prefix =]ros-workspace"
+  default: "ros2-ros-workspace"
 
 template_url:
   type: str

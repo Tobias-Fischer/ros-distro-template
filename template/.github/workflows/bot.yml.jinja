@@ -1,9 +1,12 @@
 # robostack-bot: routine maintenance for ros-[= distro =].
 #
-# - weekly: refresh the rosdistro snapshot and the conda-forge pinning (one PR each)
-# - on demand: Actions > robostack-bot > Run workflow, or comment on an issue/PR:
-#     @robostack-bot rerender | update-snapshot | update-pinning | check-stale | drift | upstream
-#   (owners, members and collaborators only)
+# - weekly: refresh the rosdistro snapshot (PR)
+# - on demand (owners, members and collaborators only):
+#     Actions > robostack-bot > Run workflow,
+#     an issue from the "robostack-bot command" issue template, or
+#     a comment `@robostack-bot <command>` on an issue/PR
+#   commands: rerender | update-snapshot | check-stale | drift | upstream
+#   (the shared conda-forge pinning is updated in the template repository)
 # - on pull requests: warn when template-owned files are edited by hand
 #
 # The bot logic lives in [= template_url =] (robostack_bot/).
@@ -20,12 +23,14 @@ on:
       command:
         description: Command to run
         type: choice
-        options: [rerender, update-snapshot, update-pinning, check-stale, drift]
+        options: [rerender, update-snapshot, check-stale, drift]
       vcs_ref:
         description: Template version for rerender (default latest)
         required: false
   issue_comment:
     types: [created]
+  issues:
+    types: [opened]
   pull_request:
 
 permissions:
@@ -63,7 +68,8 @@ jobs:
   plan:
     if: >-
       github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@robostack-bot'))
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@robostack-bot')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'robostack-bot'))
     runs-on: ubuntu-latest
     outputs:
       commands: ${{ steps.plan.outputs.commands }}
@@ -74,13 +80,13 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
           INPUT: ${{ inputs.command }}
-          BODY: ${{ github.event.comment.body }}
-          ASSOCIATION: ${{ github.event.comment.author_association }}
+          BODY: ${{ github.event.comment.body || github.event.issue.body }}
+          ASSOCIATION: ${{ github.event.comment.author_association || github.event.issue.author_association }}
         run: |
           case "$EVENT" in
-            schedule) commands='["update-snapshot","update-pinning"]' ;;
+            schedule) commands='["update-snapshot"]' ;;
             workflow_dispatch) commands="[\"$INPUT\"]" ;;
-            issue_comment)
+            issue_comment|issues)
               command=$($BOT parse-comment --body "$BODY" --association "$ASSOCIATION")
               if [ -n "$command" ]; then commands="[\"$command\"]"; else commands='[]'; fi ;;
           esac
@@ -168,8 +174,8 @@ jobs:
           title: "${{ steps.bot.outputs.title }}"
           body-path: ${{ runner.temp }}/summary.md
 
-      - name: Reply to the comment
-        if: always() && github.event_name == 'issue_comment'
+      - name: Reply on the issue / pull request
+        if: always() && (github.event_name == 'issue_comment' || github.event_name == 'issues')
         env:
           GH_TOKEN: ${{ github.token }}
           NUMBER: ${{ github.event.issue.number }}
@@ -182,3 +188,7 @@ jobs:
             echo "[Workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)"
           } > "$RUNNER_TEMP/comment.md"
           gh issue comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/comment.md"
+          # Issues opened from the "robostack-bot command" template are done now.
+          if [ "$GITHUB_EVENT_NAME" = issues ] && [ "${{ steps.bot.outcome }}" = success ]; then
+            gh issue close "$NUMBER" --repo "$GITHUB_REPOSITORY"
+          fi

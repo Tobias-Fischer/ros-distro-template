@@ -52,7 +52,7 @@ class TemplateCopy:
             ["git", "-C", str(ROOT), "ls-files", "-z", "-m", "-o", "--exclude-standard"],
             capture_output=True, text=True, check=True,
         ).stdout.split("\0")
-        for rel in filter(None, changed):
+        for rel in (r for r in changed if r and (ROOT / r).is_file()):
             (path / rel).parent.mkdir(parents=True, exist_ok=True)
             (path / rel).write_bytes((ROOT / rel).read_bytes())
         deleted = subprocess.run(
@@ -110,15 +110,19 @@ class RenderTest(unittest.TestCase):
     def test_distribution_values(self):
         rolling = (self.rendered["rolling"] / "pixi.toml").read_text()
         self.assertIn('default = "ros2-ros-workspace"', rolling)
+        self.assertIn('rev = "5767846ab2557b4e358e11a5f07c7743df3ede4e"', rolling)
         self.assertIn("rattler-build upload prefix -c robostack-rolling", rolling)
         humble = (self.rendered["humble"] / "pixi.toml").read_text()
         self.assertIn("-c https://conda.anaconda.org/robostack-staging", humble)
         self.assertIn("rattler-build upload anaconda -o robostack-staging", humble)
-        self.assertIn('default = "ros-humble-ros-workspace"', humble)
+        self.assertIn('default = "ros2-ros-workspace"', humble)
         self.assertIn("vinca-snapshot -d humble", humble)
         lyrical = (self.rendered["lyrical"] / ".github/workflows/testpr.yml").read_text()
         self.assertIn("-c https://prefix.dev/robostack-lyrical", lyrical)
-        self.assertTrue((self.rendered["kilted"] / "tests/ros-kilted-rclpy.yaml").is_file())
+        self.assertTrue((self.rendered["kilted"] / "tests/ros2-rclpy.yaml").is_file())
+        # one shared vinca for everyone
+        revs = {re.search(r'^vinca = .*$', (d / "pixi.toml").read_text(), re.M).group(0) for d in self.rendered.values()}
+        self.assertEqual(len(revs), 1)
 
     def test_pixi_toml_parses(self):
         import tomllib
@@ -142,6 +146,42 @@ class RenderTest(unittest.TestCase):
         answers = yaml.safe_load((self.rendered["rolling"] / ".copier-answers.yml").read_text())
         self.assertEqual(answers["distro"], "rolling")
         self.assertNotIn("channel_url", answers)  # computed, not stored
+
+
+class SharedFilesTest(RenderTest):
+    """robostack.yaml / packages-ignore.yaml / tests are shared; check what each distro gets."""
+
+    ORIGINAL = Path(__file__).resolve().parent.parent.parent  # ../ros-<distro> checkouts
+
+    def test_robostack_yaml_keeps_every_distro_mapping(self):
+        sys.path.insert(0, str(ROOT / "tools"))
+        from merge_conda_index import UNIFY
+
+        for distro, dest in self.rendered.items():
+            new = yaml.safe_load((dest / "robostack.yaml").read_text())
+            out = subprocess.run(
+                ["git", "-C", str(self.ORIGINAL / f"ros-{distro}"), "show", "origin/main:robostack.yaml"],
+                capture_output=True, text=True,
+            )
+            if out.returncode != 0:
+                self.skipTest("distribution checkouts not available")
+            old = yaml.safe_load(out.stdout)
+            for key, value in old.items():
+                if key in UNIFY:
+                    continue
+                self.assertEqual(new[key], value, f"{distro}: {key}")
+
+    def test_robostack_yaml_sorted(self):
+        for distro, dest in self.rendered.items():
+            keys = list(yaml.safe_load((dest / "robostack.yaml").read_text()))
+            self.assertEqual(keys, sorted(keys, key=str.casefold), distro)
+
+    def test_tests_are_distro_agnostic(self):
+        for distro, dest in self.rendered.items():
+            for path in (dest / "tests").rglob("*"):
+                self.assertFalse(path.name.startswith("ros-"), path)
+                if path.is_file():
+                    self.assertNotRegex(path.read_text(), rf"(?<![/\w])ros-{distro}-", path)
 
 
 class CiConfigTest(unittest.TestCase):
@@ -248,7 +288,8 @@ class BotTest(unittest.TestCase):
         info = yaml.safe_load((dest / "pkg_additional_info.yaml").read_text())
         self.assertEqual(info, {"bar": {"additional_cmake_args": "x"}})
         self.assertIn('name = "ros-macaroni"', (dest / "pixi.toml").read_text())
-        self.assertTrue((dest / "tests/ros-macaroni-rclpy.yaml").is_file())
+        self.assertTrue((dest / "tests/ros2-rclpy.yaml").is_file())
+        self.assertTrue((dest / "robostack.yaml").is_file())
         self.assertEqual(list((dest / "patch").iterdir()), [])
         self.assertIn("1 candidates", result.summary)
 
@@ -256,10 +297,16 @@ class BotTest(unittest.TestCase):
 class SmallTest(unittest.TestCase):
     def test_parse_comment(self):
         self.assertEqual(commands.parse_comment("@robostack-bot rerender", "MEMBER"), "rerender")
-        self.assertEqual(commands.parse_comment("Hi\n@robostack-bot, please update-pinning", "OWNER"), "update-pinning")
+        self.assertEqual(commands.parse_comment("Hi\n@robostack-bot, please update-snapshot", "OWNER"), "update-snapshot")
         self.assertIsNone(commands.parse_comment("@robostack-bot rerender", "CONTRIBUTOR"))
         self.assertIsNone(commands.parse_comment("@robostack-bot rm-rf", "MEMBER"))
         self.assertIsNone(commands.parse_comment("thanks @robostack-bot", "MEMBER"))
+        # issue form ("robostack-bot command" issue template)
+        form = "### Command\n\nupdate-snapshot\n\n### Notes\n\n_No response_"
+        self.assertEqual(commands.parse_comment(form, "OWNER"), "update-snapshot")
+        self.assertIsNone(commands.parse_comment(form, "NONE"))
+        # the pinning is shared and updated in the template repository
+        self.assertIsNone(commands.parse_comment("@robostack-bot update-pinning", "OWNER"))
 
     def test_snapshot_changes(self):
         text = commands.snapshot_changes({"a": "1.0", "b": "2.0", "c": "1"}, {"a": "1.1", "b": "2.0", "d": "3"})

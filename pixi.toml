@@ -14,6 +14,8 @@ git = "*"
 
 [pypi-dependencies]
 robostack-bot = { path = ".", editable = true }
+# Same vinca as the distributions (template/pixi.toml.jinja); used by update-pinning.
+vinca = { git = "https://github.com/RoboStack/vinca.git", rev = "5767846ab2557b4e358e11a5f07c7743df3ede4e" }
 
 [tasks]
 render-all = { cmd = "python tools/render_all.py", description = "Render the template for every distribution and diff against the checkouts next to this repo." }

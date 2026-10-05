@@ -12,7 +12,7 @@ Usage
     # From repository root
     python check_patches_clean_apply.py          # prepare + run
     python check_patches_clean_apply.py --dry    # prepare only
-    python check_patches_clean_apply.py --dry --recipe [= package_prefix =]rviz2
+    python check_patches_clean_apply.py --dry --recipe ros2-rviz2
     python check_patches_clean_apply.py --clean  # delete output
 
 The script creates (or refreshes) a sibling folder named
@@ -95,8 +95,8 @@ def parse_args() -> argparse.Namespace:
         metavar="RECIPE",
         help=(
             "Only check the specified recipe directory under recipes/. "
-            "Repeat for multiple recipes, e.g. --recipe [= package_prefix =]rviz2 "
-            "--recipe [= package_prefix =]tf2"
+            "Repeat for multiple recipes, e.g. --recipe ros2-rviz2 "
+            "--recipe ros2-tf2"
         ),
     )
     return ap.parse_args()
