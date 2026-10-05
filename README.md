@@ -13,23 +13,24 @@ Each distribution is an instance of `template/`, rendered with a handful of answ
 | answer | meaning | example |
 |---|---|---|
 | `distro` | rosdistro name | `jazzy` |
-| `package_prefix` | primary package prefix | `ros-jazzy-` (rolling: `ros2-`) |
 | `channel_name` | channel the packages are published to | `robostack-jazzy` (humble: `robostack-staging`) |
 | `upload_target` | `prefix` (prefix.dev) or `anaconda` (anaconda.org) | `anaconda` |
-| `vinca_git`, `vinca_rev` | vinca version | |
 
-Everything else (CI workflows, build scripts, `pixi.toml`, README, AGENTS.md, the
-Python tools, the shared smoke tests) is identical for all distributions.
+Everything else is shared: CI workflows, build scripts, `pixi.toml` (including the
+vinca version), README, AGENTS.md, the Python tools, `robostack.yaml`,
+`packages-ignore.yaml`, `vinca_pinning.yaml` and the smoke tests in `tests/`
+(named `ros2-<pkg>.yaml`, which vinca matches for any distribution). The few real
+differences are `[% if distro ... %]` blocks, e.g. in `robostack.yaml`
+(`tools/merge_conda_index.py` built it from the five distributions).
 
 Files fall in two groups:
 
 - **template-owned**: everything rendered from `template/`. Never edit these in a
   distribution: the next update overwrites them, and the bot flags such edits on
   PRs (`upstream-to-template` label). Change them here instead.
-- **distribution-owned**: `vinca.yaml`, `vinca_pinning.yaml`, `robostack.yaml`,
-  `pkg_additional_info.yaml`, `rosdistro_additional_recipes.yaml`,
-  `packages-ignore.yaml`, `ci.yaml` (seeded once, see `_skip_if_exists` in
-  `copier.yml`), plus `patch/`, distribution-specific `tests/`, and the generated
+- **distribution-owned**: `vinca.yaml`, `pkg_additional_info.yaml`,
+  `rosdistro_additional_recipes.yaml`, `ci.yaml` (seeded once, see
+  `_skip_if_exists` in `copier.yml`), `patch/`, and the generated
   `rosdistro_snapshot.yaml`, `conda_build_config.yaml`, `pixi.lock`.
 
 Temporary PR-build controls that used to be edited into `testpr.yml` (full rebuild,
@@ -45,7 +46,9 @@ Prefer one unified file over a conditional; add a conditional only for a real
 difference between distributions.
 
 > `template/.gitignore` ignores `*.sh`/`*.bat`, so new scripts under
-> `template/.scripts/` have to be added with `git add -f`.
+> `template/.scripts/` have to be added with `git add -f`, and renders of a dirty
+> working tree (copier copies uncommitted changes with `git add -A`) leave them
+> out: commit before `pixi run render-all`.
 
 ## Changing the template
 
@@ -71,14 +74,18 @@ workflows call; every command can also be run locally in a distribution checkout
 | `drift` | report hand edits of template-owned files |
 | `upstream --template-dir DIR` | apply those edits to a template checkout |
 | `update-snapshot` | `pixi run create_snapshot`, summarise the version bumps |
-| `update-pinning` | `pixi run vinca-pinning-update --render` + `pixi run check-deps` |
+| `update-pinning DISTRO_DIR...` | (template repository) move the shared `vinca_pinning.yaml` to the latest conda-forge pinning, with migrations selected for all distributions |
 | `check-stale` | `check_dependency_compat.py --stale` against the published channel |
 | `new-distro NAME --from DIR --dest DIR` | instantiate a new distribution |
 
 In each distribution, `.github/workflows/bot.yml` (template-owned) runs
-`update-snapshot` and `update-pinning` weekly, any command from *Actions › Run
-workflow*, or from a comment `@robostack-bot <command>` by an owner, member or
-collaborator, and the drift check on every PR. PRs are opened with the
+`update-snapshot` weekly, any command from *Actions › Run workflow*, from an issue
+opened with the *robostack-bot command* issue template, or from a comment
+`@robostack-bot <command>` by an owner, member or collaborator, and the drift check
+on every PR. `update-pinning.yml` in this repository updates the shared pinning
+weekly; when a template update changes `vinca_pinning.yaml`, `rerender` also runs
+`vinca-pinning-render` and `check-deps` in the distribution and reports the result
+in its PR. PRs are opened with the
 robostack-bot GitHub App (`vars.ROBOSTACK_BOT_APP_ID`,
 `secrets.ROBOSTACK_BOT_PRIVATE_KEY`; `secrets.GHA_PAT` as a fallback) so that CI
 runs on them.
@@ -87,9 +94,9 @@ runs on them.
 
 *Actions › New distribution*: name, the distribution to seed from, upload target.
 The bot renders the template, seeds `vinca.yaml` (new `ros_distro`,
-`build_number: 0`), `robostack.yaml`, `packages-ignore.yaml`, `vinca_pinning.yaml`
-and `pkg_additional_info.yaml` (without build-number overrides) from the source,
-generates the snapshot and pinning, and either uploads the result or creates
+`build_number: 0`) and `pkg_additional_info.yaml` (without build-number overrides)
+from the source,
+generates the snapshot and `conda_build_config.yaml`, and either uploads the result or creates
 `RoboStack/ros-<name>` with a checklist issue (channel, secrets, mutex, patches to
 port). Locally:
 
@@ -102,7 +109,8 @@ pixi run robostack-bot new-distro macaroni --from ../ros-rolling --dest ../ros-m
 ```bash
 cd ros-<distro>
 pixi exec copier copy --trust --overwrite --data-file <answers.yml> gh:RoboStack/ros-distro-template .
-# move the temporary rebuild controls from the old testpr.yml into ci.yaml
+# move the temporary rebuild controls from the old testpr.yml into ci.yaml,
+# and delete the old tests/ros-<distro>-*.yaml (replaced by tests/ros2-*.yaml)
 pixi lock
 git add -A && git add -f .scripts
 ```
