@@ -49,11 +49,6 @@ ca-certificates:
   robostack: [ca-certificates]
 cargo:
   robostack: [rust]
-chrony:
-  robostack:
-    linux: [chrony]
-    osx: [chrony]
-    win64: []
 clang-format:
   robostack: [clang-format]
 clang-tidy:
@@ -1270,8 +1265,10 @@ socat:
     linux: [socat]
     osx: [socat]
     win64: []
+[% if distro not in ['humble'] %]
 sophus:
   robostack: [sophus]
+[% endif %]
 spacenavd:
   robostack: [libspnav]
 spdlog:
@@ -1298,8 +1295,10 @@ tinyxml:
   robostack: [tinyxml]
 tinyxml2:
   robostack: [tinyxml2]
+[% if distro not in ['humble', 'jazzy', 'kilted'] %]
 tl_expected:
   robostack: [cpp-expected]
+[% endif %]
 udev:
   robostack:
     linux: [libusb, libudev]
