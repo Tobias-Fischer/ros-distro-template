@@ -155,7 +155,7 @@ class SharedFilesTest(RenderTest):
 
     def test_robostack_yaml_keeps_every_distro_mapping(self):
         sys.path.insert(0, str(ROOT / "tools"))
-        from merge_conda_index import UNIFY
+        from merge_conda_index import DROP, UNIFY
 
         for distro, dest in self.rendered.items():
             new = yaml.safe_load((dest / "robostack.yaml").read_text())
@@ -167,7 +167,7 @@ class SharedFilesTest(RenderTest):
                 self.skipTest("distribution checkouts not available")
             old = yaml.safe_load(out.stdout)
             for key, value in old.items():
-                if key in UNIFY:
+                if key in UNIFY or key in DROP:
                     continue
                 self.assertEqual(new[key], value, f"{distro}: {key}")
 
