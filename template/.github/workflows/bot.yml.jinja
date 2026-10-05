@@ -131,7 +131,7 @@ jobs:
         if: matrix.command == 'upstream-to-template'
         uses: actions/checkout@v6
         with:
-          repository: RoboStack/ros-distro-template
+          repository: [= template_repo =]
           path: .template-src
           token: ${{ steps.app.outputs.token || secrets.GHA_PAT }}
 

@@ -1,6 +1,6 @@
 # Copier template for RoboStack ROS 2 distribution repositories.
 #
-# Instantiate:  copier copy --trust gh:RoboStack/ros-distro-template ros-<distro>
+# Instantiate:  copier copy --trust gh:Tobias-Fischer/ros-distro-template ros-<distro>
 # Update:       copier update --trust --defaults   (or let robostack-bot open the PR)
 #
 # Jinja uses [= var =] / [% if ... %] instead of {{ }} / {% %} so that GitHub
@@ -60,7 +60,14 @@ example_package:
   when: false
   default: "ros2-ros-workspace"
 
+# Where this template (and robostack-bot) lives. Under review in Tobias-Fischer's
+# account for now; change to RoboStack/ros-distro-template when it moves.
+template_repo:
+  type: str
+  when: false
+  default: Tobias-Fischer/ros-distro-template
+
 template_url:
   type: str
   when: false
-  default: https://github.com/RoboStack/ros-distro-template
+  default: "https://github.com/[= template_repo =]"

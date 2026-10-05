@@ -30,7 +30,7 @@ from pathlib import Path
 
 from . import commands
 
-DEFAULT_TEMPLATE = "https://github.com/RoboStack/ros-distro-template.git"
+DEFAULT_TEMPLATE = "https://github.com/Tobias-Fischer/ros-distro-template.git"
 
 # Commands that only report findings: `ok == False` means "found something", not
 # "failed", so they don't fail the workflow.

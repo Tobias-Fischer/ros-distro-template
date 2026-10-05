@@ -5,6 +5,11 @@ The shared infrastructure of the RoboStack ROS 2 distribution repositories
 [copier](https://copier.readthedocs.io) template, plus **robostack-bot**, which
 keeps the distributions up to date.
 
+> **Status:** under review at
+> [Tobias-Fischer/ros-distro-template](https://github.com/Tobias-Fischer/ros-distro-template),
+> to be moved to RoboStack. Moving it means changing `template_repo` in
+> `copier.yml` (and `DEFAULT_TEMPLATE` in `robostack_bot/cli.py`) and releasing.
+
 ## How it works
 
 Each distribution is an instance of `template/`, rendered with a handful of answers
@@ -160,7 +165,7 @@ pixi run robostack-bot new-distribution macaroni --from ../ros-rolling --dest ..
 
 ```bash
 cd ros-<distro>
-pixi exec copier copy --trust --overwrite --data-file <answers.yml> gh:RoboStack/ros-distro-template .
+pixi exec copier copy --trust --overwrite --data-file <answers.yml> gh:Tobias-Fischer/ros-distro-template .
 # move the temporary rebuild controls from the old testpr.yml into ci.yaml,
 # and delete the old tests/ros-<distro>-*.yaml (replaced by tests/ros2-*.yaml)
 pixi lock

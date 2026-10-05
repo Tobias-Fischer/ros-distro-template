@@ -297,7 +297,7 @@ class BotTest(unittest.TestCase):
 
 class SmallTest(unittest.TestCase):
     def test_issue_template_lists_every_command(self):
-        form = yaml.safe_load((ROOT / "template/.github/ISSUE_TEMPLATE/3-robostack-bot.yml").read_text())
+        form = yaml.safe_load((ROOT / "template/.github/ISSUE_TEMPLATE/3-robostack-bot.yml.jinja").read_text())
         dropdown = next(item for item in form["body"] if item.get("id") == "command")
         self.assertEqual(dropdown["attributes"]["options"], list(commands.COMMANDS))
         text = form["body"][0]["attributes"]["value"]

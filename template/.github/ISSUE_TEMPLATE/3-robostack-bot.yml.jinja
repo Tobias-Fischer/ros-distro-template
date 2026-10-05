@@ -15,11 +15,11 @@ body:
 
         | command | what it does |
         |---|---|
-        | `update-from-template` | Update this repository to the latest version of the shared template ([ros-distro-template](https://github.com/RoboStack/ros-distro-template)): runs `copier update`, then `pixi lock`; when the shared pinning changed it also re-renders `conda_build_config.yaml` and runs `check-deps`. Opens a PR. |
+        | `update-from-template` | Update this repository to the latest version of the shared template ([ros-distro-template]([= template_url =])): runs `copier update`, then `pixi lock`; when the shared pinning changed it also re-renders `conda_build_config.yaml` and runs `check-deps`. Opens a PR. |
         | `update-rosdistro-snapshot` | Refresh `rosdistro_snapshot.yaml` to the latest rosdistro release (`pixi run create_snapshot`). Opens a PR listing the version bumps. Also runs weekly. |
         | `find-stale-packages` | List packages on the channel that were built against pins that no longer match (`check_dependency_compat.py --stale`), with the `pkg_additional_info.yaml` build-number snippet to rebuild them. Replies only. |
         | `check-template-drift` | List template-owned files that were edited by hand in this repository (they would be overwritten by the next template update). Replies only; also runs on every PR. |
-        | `upstream-to-template` | Move those hand edits into the template: opens a PR in RoboStack/ros-distro-template, so every distribution gets them. |
+        | `upstream-to-template` | Move those hand edits into the template: opens a PR in [= template_repo =], so every distribution gets them. |
 
         The conda-forge pinning (`vinca_pinning.yaml`) is shared by all distributions and
         updated in the template repository; it arrives here with the next `update-from-template` PR.
