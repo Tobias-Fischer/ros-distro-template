@@ -284,6 +284,7 @@ class BotTest(unittest.TestCase):
         vinca = (dest / "vinca.yaml").read_text()
         self.assertIn("ros_distro: macaroni", vinca)
         self.assertIn("build_number: 0", vinca)
+        self.assertIn("package_name_mode: both", vinca)
         self.assertIn("robostack-macaroni", vinca)
         info = yaml.safe_load((dest / "pkg_additional_info.yaml").read_text())
         self.assertEqual(info, {"bar": {"additional_cmake_args": "x"}})

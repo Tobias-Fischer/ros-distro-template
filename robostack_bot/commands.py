@@ -323,6 +323,11 @@ def _strip_build_numbers(text: str) -> str:
 def _seed_vinca(text: str, source: str, distro: str) -> str:
     text = re.sub(r"(?m)^ros_distro:.*$", f"ros_distro: {distro}", text)
     text = re.sub(r"(?m)^build_number:.*$", "build_number: 0", text)
+    # Packages are named ros2-<pkg> (+ ros-<distro>-<pkg> compatibility packages).
+    if re.search(r"(?m)^package_name_mode:", text):
+        text = re.sub(r"(?m)^package_name_mode:.*$", "package_name_mode: both", text)
+    else:
+        text = re.sub(r"(?m)^(ros_distro:.*)$", r"\1\n\npackage_name_mode: both", text, count=1)
     return text.replace(f"robostack-{source}", f"robostack-{distro}")
 
 
