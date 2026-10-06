@@ -248,28 +248,50 @@ def update_snapshot(repo: Path) -> Result:
 # --------------------------------------------------------------------------- #
 # update-conda-forge-pinning (template repository)
 # --------------------------------------------------------------------------- #
+def write_shared_pinning(path: Path, version: str, migrations: list[str]) -> None:
+    """Rewrite the data of pinning/conda_forge.yaml, keeping its leading comments."""
+    lines = path.read_text().splitlines() if path.is_file() else []
+    header = []
+    for line in lines:
+        if not line.startswith("#"):
+            break
+        header.append(line)
+    body = [f"conda_forge_pinning_version: {version}", "migrations:"]
+    body += [f"  - {m}" for m in migrations]
+    path.write_text("\n".join(header + body) + "\n")
+
+
 def update_pinning(template_dir: Path, distro_dirs: list[Path]) -> Result:
-    """Move the shared template/vinca_pinning.yaml to the latest conda-forge pinning.
+    """Move the shared conda-forge pinning (pinning/conda_forge.yaml) to the latest version.
 
     Runs in the template repository. Migrations are selected for the union of the
     dependencies of all distributions (their recipes are generated with vinca); the
     distributions then pick the change up through the template update PR, which
-    renders their conda_build_config.yaml and runs check-deps.
+    renders their conda_build_config.yaml and runs check-deps. Distributions that
+    pin an older version (`conda_forge_pinning_version` answer) are unaffected.
     """
     from vinca import pinning  # only needed here, keeps the other commands vinca-free
 
-    config = template_dir / "template" / "vinca_pinning.yaml"
-    before = config.read_text()
+    shared = template_dir / "pinning" / "conda_forge.yaml"
+    overrides = template_dir / "pinning" / "overrides.yaml"
+    before = yaml.safe_load(shared.read_text()) or {}
     dependencies: set[str] = set()
     for distro_dir in distro_dirs:
         print(f"Collecting dependencies of {distro_dir.name}", flush=True)
         dependencies |= pinning.dependencies_from_vinca(distro_dir, pinning.DEFAULT_PLATFORMS)
-    version, migrations, reports = pinning.update_pinning(config, dependencies=dependencies)
-    if config.read_text() == before:
+    with tempfile.TemporaryDirectory() as tmp:
+        # vinca works on a complete vinca_pinning.yaml: assemble one from both parts.
+        spec = Path(tmp) / "vinca_pinning.yaml"
+        spec.write_text(shared.read_text() + "\n" + overrides.read_text())
+        version, migrations, reports = pinning.update_pinning(spec, dependencies=dependencies)
+    if str(before.get("conda_forge_pinning_version")) == str(version) and list(
+        before.get("migrations") or []
+    ) == list(migrations):
         return Result("Pinning is up to date", f"Already on conda-forge-pinning {version}.")
+    write_shared_pinning(shared, version, list(migrations))
     lines = [
-        f"Moved `template/vinca_pinning.yaml` to conda-forge-pinning `{version}`, selecting "
-        f"migrations for the dependencies of {', '.join(d.name for d in distro_dirs)}.",
+        f"Moved the shared pinning (`pinning/conda_forge.yaml`) to conda-forge-pinning `{version}`, "
+        f"selecting migrations for the dependencies of {', '.join(d.name for d in distro_dirs)}.",
         "",
         "Applied migrations: " + (", ".join(f"`{m}`" for m in migrations) or "none"),
         "",
@@ -277,8 +299,8 @@ def update_pinning(template_dir: Path, distro_dirs: list[Path]) -> Result:
     lines += [f"- `{name}`: {report}" for name, report in reports]
     lines += [
         "",
-        "After merging and releasing, every distribution gets a template update PR that "
-        "re-renders its `conda_build_config.yaml` and runs `check-deps`.",
+        "After merging and releasing, every distribution that follows the shared pinning gets "
+        "a template update PR that re-renders its `conda_build_config.yaml` and runs `check-deps`.",
     ]
     return Result("Update conda-forge pinning", "\n".join(lines), changed=True)
 

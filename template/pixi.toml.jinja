@@ -36,7 +36,10 @@ git = "*"
 
 [pypi-dependencies]
 # Shared by all distributions; bump it in the template.
-vinca = { git = "https://github.com/RoboStack/vinca.git", rev = "5767846ab2557b4e358e11a5f07c7743df3ede4e" }
+# TEMPORARY: RoboStack/vinca master + a fallback for rosdistro snapshots without
+# dependency metadata (Tobias-Fischer/vinca fix/snapshot-deps-fallback), so existing
+# snapshots keep working; switch back to RoboStack/vinca once it is merged there.
+vinca = { git = "https://github.com/Tobias-Fischer/vinca.git", rev = "df761ca6d82105d6873639d398a2fdba1a757f72" }
 # For local development, temporarily use (and regenerate pixi.lock):
 # vinca = { path = "../vinca", editable = true }
 

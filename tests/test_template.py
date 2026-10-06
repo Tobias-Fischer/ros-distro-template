@@ -110,7 +110,7 @@ class RenderTest(unittest.TestCase):
     def test_distribution_values(self):
         rolling = (self.rendered["rolling"] / "pixi.toml").read_text()
         self.assertIn('default = "ros2-ros-workspace"', rolling)
-        self.assertIn('rev = "5767846ab2557b4e358e11a5f07c7743df3ede4e"', rolling)
+        self.assertIn('rev = "df761ca6d82105d6873639d398a2fdba1a757f72"', rolling)
         self.assertIn("rattler-build upload prefix -c robostack-rolling", rolling)
         humble = (self.rendered["humble"] / "pixi.toml").read_text()
         self.assertIn("-c https://conda.anaconda.org/robostack-staging", humble)
@@ -327,6 +327,32 @@ class SmallTest(unittest.TestCase):
         text = commands.snapshot_changes({"a": "1.0", "b": "2.0", "c": "1"}, {"a": "1.1", "b": "2.0", "d": "3"})
         self.assertTrue(text.startswith("1 updated, 1 added, 1 removed"))
         self.assertIn("| a | 1.0 | 1.1 |", text)
+
+    def test_write_shared_pinning_keeps_header(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "conda_forge.yaml"
+            path.write_text("# shared\n# pinning\nconda_forge_pinning_version: 1\nmigrations:\n  - a\n")
+            commands.write_shared_pinning(path, "2026.10.05", ["a", "b"])
+            self.assertEqual(
+                path.read_text(),
+                "# shared\n# pinning\nconda_forge_pinning_version: 2026.10.05\nmigrations:\n  - a\n  - b\n",
+            )
+
+    def test_pinning_override(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            shared = yaml.safe_load((ROOT / "pinning/conda_forge.yaml").read_text())
+            tpl.render(ROOT, {"distro": "lyrical"}, Path(tmp) / "shared")
+            tpl.render(
+                ROOT,
+                {"distro": "rolling", "conda_forge_pinning_version": "2026.01.01", "conda_forge_migrations": ["m1"]},
+                Path(tmp) / "old",
+            )
+            follows = yaml.safe_load((Path(tmp) / "shared/vinca_pinning.yaml").read_text())
+            pinned = yaml.safe_load((Path(tmp) / "old/vinca_pinning.yaml").read_text())
+            self.assertEqual(follows["conda_forge_pinning_version"], shared["conda_forge_pinning_version"])
+            self.assertEqual(pinned["conda_forge_pinning_version"], "2026.01.01")
+            self.assertEqual(pinned["migrations"], ["m1"])
+            self.assertEqual(pinned["pinning_overrides"], follows["pinning_overrides"])
 
     def test_channel_url(self):
         self.assertEqual(commands.channel_url({"distro": "lyrical"}), "https://prefix.dev/robostack-lyrical")

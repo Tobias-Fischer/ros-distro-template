@@ -49,6 +49,19 @@ upload_target:
     anaconda.org: anaconda
   default: prefix
 
+conda_forge_pinning_version:
+  type: str
+  help: >-
+    Stay on this conda-forge-pinning version (e.g. 2026.09.01.16.28.00) instead of
+    the shared one in pinning/conda_forge.yaml; empty to follow the shared pinning
+  default: ""
+
+conda_forge_migrations:
+  type: yaml
+  help: Migrations to apply with conda_forge_pinning_version (ignored when it is empty)
+  default: []
+  when: "[= conda_forge_pinning_version != '' =]"
+
 # Computed values (not asked, not stored in the answers file).
 channel_url:
   type: str

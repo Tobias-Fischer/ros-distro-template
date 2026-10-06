@@ -1,17 +1,5 @@
-# This file is generated from ros-distro-template (template/vinca_pinning.yaml).
-# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
-
-conda_forge_pinning_version: 2026.09.25.23.22.04
-migrations:
-  - elfutils0196
-  - giflib6
-  - go_macos
-  - gstreamer128
-  - hdf52
-  - libboost190
-  - proj99
-  - urdfdom6
-  - vtk970
+# Pinning overrides shared by all distributions, rendered into each
+# distribution's vinca_pinning.yaml (template/vinca_pinning.yaml.jinja).
 pinning_overrides:
   # Build commands provide their channels with `-c`, so omit the inherited
   # conda-forge-pinning channel_sources value from the rendered configuration.

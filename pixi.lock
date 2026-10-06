@@ -106,7 +106,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
       - pypi: ./
-      - pypi: git+https://github.com/RoboStack/vinca.git?rev=5767846ab2557b4e358e11a5f07c7743df3ede4e#5767846ab2557b4e358e11a5f07c7743df3ede4e
+      - pypi: git+https://github.com/Tobias-Fischer/vinca.git?rev=df761ca6d82105d6873639d398a2fdba1a757f72#df761ca6d82105d6873639d398a2fdba1a757f72
       - pypi: https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/74/ef303ec980ef962ffe548fa36cb138bb399d1d1315731ba7bb81da85f7e0/rosdistro-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
@@ -203,7 +203,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/noarch/tzdata-2026c-h151e31d_0.conda
       - conda: https://prefix.dev/conda-forge/noarch/zipp-4.1.1-pyh5ded981_0.conda
       - pypi: ./
-      - pypi: git+https://github.com/RoboStack/vinca.git?rev=5767846ab2557b4e358e11a5f07c7743df3ede4e#5767846ab2557b4e358e11a5f07c7743df3ede4e
+      - pypi: git+https://github.com/Tobias-Fischer/vinca.git?rev=df761ca6d82105d6873639d398a2fdba1a757f72#df761ca6d82105d6873639d398a2fdba1a757f72
       - pypi: https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/74/ef303ec980ef962ffe548fa36cb138bb399d1d1315731ba7bb81da85f7e0/rosdistro-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
@@ -294,7 +294,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-64/yaml-0.2.5-had63097_3.conda
       - conda: https://prefix.dev/conda-forge/osx-64/zstd-1.5.7-hbc1a06c_7.conda
       - pypi: ./
-      - pypi: git+https://github.com/RoboStack/vinca.git?rev=5767846ab2557b4e358e11a5f07c7743df3ede4e#5767846ab2557b4e358e11a5f07c7743df3ede4e
+      - pypi: git+https://github.com/Tobias-Fischer/vinca.git?rev=df761ca6d82105d6873639d398a2fdba1a757f72#df761ca6d82105d6873639d398a2fdba1a757f72
       - pypi: https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/74/ef303ec980ef962ffe548fa36cb138bb399d1d1315731ba7bb81da85f7e0/rosdistro-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
@@ -385,7 +385,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/osx-arm64/yaml-0.2.5-h74c22ad_3.conda
       - conda: https://prefix.dev/conda-forge/osx-arm64/zstd-1.5.7-hf451053_7.conda
       - pypi: ./
-      - pypi: git+https://github.com/RoboStack/vinca.git?rev=5767846ab2557b4e358e11a5f07c7743df3ede4e#5767846ab2557b4e358e11a5f07c7743df3ede4e
+      - pypi: git+https://github.com/Tobias-Fischer/vinca.git?rev=df761ca6d82105d6873639d398a2fdba1a757f72#df761ca6d82105d6873639d398a2fdba1a757f72
       - pypi: https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/74/ef303ec980ef962ffe548fa36cb138bb399d1d1315731ba7bb81da85f7e0/rosdistro-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
@@ -464,7 +464,7 @@ environments:
       - conda: https://prefix.dev/conda-forge/win-64/yaml-0.2.5-h6a83c73_3.conda
       - conda: https://prefix.dev/conda-forge/win-64/zstd-1.5.7-h534d264_7.conda
       - pypi: ./
-      - pypi: git+https://github.com/RoboStack/vinca.git?rev=5767846ab2557b4e358e11a5f07c7743df3ede4e#5767846ab2557b4e358e11a5f07c7743df3ede4e
+      - pypi: git+https://github.com/Tobias-Fischer/vinca.git?rev=df761ca6d82105d6873639d398a2fdba1a757f72#df761ca6d82105d6873639d398a2fdba1a757f72
       - pypi: https://files.pythonhosted.org/packages/0b/a7/71ac2cff56fec219ed242bb11b8efb69fcc4bec75db06fb7bfe35de520e6/certifi-2026.7.22-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/74/ef303ec980ef962ffe548fa36cb138bb399d1d1315731ba7bb81da85f7e0/rosdistro-1.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/12/b3/231ffd4ab1fc9d679809f356cebee130ac7daa00d6d6f3206dd4fd137e9e/distro-1.9.0-py3-none-any.whl
@@ -3550,7 +3550,7 @@ packages:
   - copier>=9.4
   - pyyaml
   requires_python: '>=3.11'
-- pypi: git+https://github.com/RoboStack/vinca.git?rev=5767846ab2557b4e358e11a5f07c7743df3ede4e#5767846ab2557b4e358e11a5f07c7743df3ede4e
+- pypi: git+https://github.com/Tobias-Fischer/vinca.git?rev=df761ca6d82105d6873639d398a2fdba1a757f72#df761ca6d82105d6873639d398a2fdba1a757f72
   name: vinca
   version: 0.2.0
   requires_dist:

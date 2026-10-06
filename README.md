@@ -20,6 +20,7 @@ Each distribution is an instance of `template/`, rendered with a handful of answ
 | `distro` | rosdistro name | `jazzy` |
 | `channel_name` | channel the packages are published to | `robostack-jazzy` (humble: `robostack-staging`) |
 | `upload_target` | `prefix` (prefix.dev) or `anaconda` (anaconda.org) | `anaconda` |
+| `conda_forge_pinning_version`, `conda_forge_migrations` | optional: stay on an older conda-forge pinning instead of the shared one, e.g. until the next full rebuild | rolling: `2026.09.01.16.28.00` + its 8 migrations |
 
 Everything else is shared: CI workflows, build scripts, `pixi.toml` (including the
 vinca version), README, AGENTS.md, the Python tools, `robostack.yaml`,
@@ -38,6 +39,13 @@ Files fall in two groups:
   `rosdistro_additional_recipes.yaml`, `ci.yaml` (seeded once, see
   `_skip_if_exists` in `copier.yml`), `patch/`, and the generated
   `rosdistro_snapshot.yaml`, `conda_build_config.yaml`, `pixi.lock`.
+
+The conda-forge pinning is shared: `pinning/conda_forge.yaml` (version and
+migrations, updated weekly by `update-conda-forge-pinning`) and
+`pinning/overrides.yaml` (local pins) are rendered into each distribution's
+`vinca_pinning.yaml`. A distribution that isn't ready for a newer pinning sets the
+two optional answers above and keeps its version and migrations, while still getting
+the shared overrides.
 
 Temporary PR-build controls that used to be edited into `testpr.yml` (full rebuild,
 cache evictions) now live in the distribution-owned `ci.yaml`
@@ -144,7 +152,7 @@ In this repository:
 
 | command | what it does |
 |---|---|
-| `update-conda-forge-pinning DISTRO_DIR...` | Move the shared `template/vinca_pinning.yaml` to the latest conda-forge pinning, with migrations selected for the dependencies of all distributions. Runs weekly (`update-conda-forge-pinning.yml`) and opens a PR here. |
+| `update-conda-forge-pinning DISTRO_DIR...` | Move the shared `pinning/conda_forge.yaml` to the latest conda-forge pinning, with migrations selected for the dependencies of all distributions. Runs weekly (`update-conda-forge-pinning.yml`) and opens a PR here. |
 | `new-distribution NAME --from DIR --dest DIR` | Instantiate a new distribution (see below). |
 
 PRs are opened with the robostack-bot GitHub App (`vars.ROBOSTACK_BOT_APP_ID`,

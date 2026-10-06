@@ -1,0 +1,17 @@
+# This file is generated from ros-distro-template (template/vinca_pinning.yaml.jinja).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
+# The shared values come from pinning/conda_forge.yaml and pinning/overrides.yaml
+# in the template repository.
+[% if conda_forge_pinning_version %]
+# This distribution stays on an older conda-forge pinning (copier answers
+# conda_forge_pinning_version / conda_forge_migrations).
+conda_forge_pinning_version: [= conda_forge_pinning_version =]
+migrations:
+[% for migration in conda_forge_migrations %]
+  - [= migration =]
+[% endfor %]
+[% else %]
+[% include "pinning/conda_forge.yaml" %]
+[% endif %]
+[% include "pinning/overrides.yaml" %]
