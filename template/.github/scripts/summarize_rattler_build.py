@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# This file is generated from ros-distro-template (template/.github/scripts/summarize_rattler_build.py).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 """Write a compact rattler-build diagnostic for the GitHub job summary."""
 
 from __future__ import annotations

@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# This file is generated from ros-distro-template (template/build_gap_report.py).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 """Report gaps between generated recipes and built conda artifacts.
 
 Default behavior is platform-agnostic: it inspects all output/<platform> folders that

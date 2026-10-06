@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# This file is generated from ros-distro-template (template/check_dependency_compat.py).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 """Detect incompatible dependency pins before (or after) building ROS packages.
 
 Three modes, all platform-agnostic (default platform: the current machine):

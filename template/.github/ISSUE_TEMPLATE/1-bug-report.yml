@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/.github/ISSUE_TEMPLATE/1-bug-report.yml).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 name: Bug report
 description: Report a bug.
 labels: bug

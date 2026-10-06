@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/robostack.yaml).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 # TODO
 # python3-babeltrace:
 #   robostack: [babeltrace]

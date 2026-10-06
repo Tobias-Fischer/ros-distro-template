@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/.github/workflows/main.yml).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 name: Generate CI pipelines for ROS 2 packages
 
 permissions:

@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/packages-ignore.yaml).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 # This package is closed source?!
 rti-connext-dds-5.3.1:
   conda-forge: []

@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/tests/ros2-rosidl-typesupport-introspection-c.yaml).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 tests:
   # Regression test for https://github.com/RoboStack/ros-humble/pull/229#issuecomment-2563868968
   - script:

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# This file is generated from ros-distro-template (template/.scripts/build_unix.sh).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 
 # Default values
 target=""

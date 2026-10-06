@@ -296,6 +296,12 @@ class BotTest(unittest.TestCase):
 
 
 class SmallTest(unittest.TestCase):
+    def test_template_files_have_headers(self):
+        out = subprocess.run(
+            [sys.executable, str(ROOT / "tools/add_headers.py"), "--check"], capture_output=True, text=True
+        )
+        self.assertEqual(out.returncode, 0, out.stdout)
+
     def test_issue_template_lists_every_command(self):
         form = yaml.safe_load((ROOT / "template/.github/ISSUE_TEMPLATE/3-robostack-bot.yml.jinja").read_text())
         dropdown = next(item for item in form["body"] if item.get("id") == "command")

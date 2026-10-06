@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/tests/ros2-demo-nodes-cpp.yaml).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 tests:
   # Regression test for https://github.com/RoboStack/ros-humble/issues/150
   - script:

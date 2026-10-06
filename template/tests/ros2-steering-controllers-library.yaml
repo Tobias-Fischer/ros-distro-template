@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/tests/ros2-steering-controllers-library.yaml).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 tests:
   - script:
     - cmake-package-check steering_controllers_library --targets steering_controllers_library::steering_controllers_library

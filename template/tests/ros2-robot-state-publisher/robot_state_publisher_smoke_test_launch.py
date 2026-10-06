@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/tests/ros2-robot-state-publisher/robot_state_publisher_smoke_test_launch.py).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 import re
 import sys
 import unittest

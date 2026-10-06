@@ -1,2 +1,5 @@
+# This file is generated from ros-distro-template (template/.gitattributes).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 # GitHub syntax highlighting
 pixi.lock linguist-language=YAML linguist-generated=true

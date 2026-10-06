@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# This file is generated from ros-distro-template (template/check_patches_clean_apply.py).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 """
 check_patches_clean_apply.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -1,3 +1,6 @@
+# This file is generated from ros-distro-template (template/tests/ros2-control-toolbox.yaml).
+# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+
 tests:
   - script:
     - cmake-package-check control_toolbox --targets control_toolbox::control_toolbox control_toolbox::rate_limiter control_toolbox::low_pass_filter

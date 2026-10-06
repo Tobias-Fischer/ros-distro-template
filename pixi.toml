@@ -21,3 +21,4 @@ vinca = { git = "https://github.com/RoboStack/vinca.git", rev = "5767846ab2557b4
 render-all = { cmd = "python tools/render_all.py", description = "Render the template for every distribution and diff against the checkouts next to this repo." }
 check = { cmd = "python tools/render_all.py --check", description = "Fail if a rendered distribution differs from its repository." }
 test = { cmd = "python -m unittest discover -s tests -v", description = "Unit tests for the template and robostack-bot." }
+headers = { cmd = "python tools/add_headers.py", description = "Add or refresh the 'generated from ros-distro-template' header of every template-owned file." }
