@@ -145,7 +145,25 @@ In this repository:
 
 PRs are opened with the robostack-bot GitHub App (`vars.ROBOSTACK_BOT_APP_ID`,
 `secrets.ROBOSTACK_BOT_PRIVATE_KEY`; `secrets.GHA_PAT` as a fallback) so that CI
-runs on them.
+runs on them. Without either, the workflows fall back to `GITHUB_TOKEN`, which
+needs "Allow GitHub Actions to create and approve pull requests", doesn't trigger
+CI on the PRs and can't push to the template repository.
+
+### Setting up the bot app
+
+1. Create a GitHub App (org or user settings › Developer settings › GitHub Apps),
+   webhook inactive, with repository permissions **Contents**, **Pull requests**,
+   **Issues** and **Workflows**: read and write (Workflows is needed because template
+   updates change `.github/workflows/`). For `new-distribution` with `create_repo`
+   it also needs **Administration: read and write**, and must live in an
+   organisation: GitHub Apps can't create repositories in personal accounts.
+2. Install it on the template repository and every distribution repository.
+3. Set `ROBOSTACK_BOT_APP_ID` (variable) and `ROBOSTACK_BOT_PRIVATE_KEY` (secret, the
+   `.pem`) in each of those repositories.
+
+Note that GitHub runs `bot.yml` from the default branch for comments, issues and
+*Run workflow*: changes to the bot workflow itself take effect once the template
+update PR is merged.
 
 ## New distribution
 
