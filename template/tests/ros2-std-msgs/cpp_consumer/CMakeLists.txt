@@ -1,5 +1,5 @@
 # This file is generated from ros-distro-template (template/tests/ros2-std-msgs/cpp_consumer/CMakeLists.txt).
-# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+# If you change it here, upstream the change: comment `@robostack-bot upstream-to-template` on your PR.
 
 cmake_minimum_required(VERSION 3.20)
 project(std_msgs_cpp_consumer CXX)

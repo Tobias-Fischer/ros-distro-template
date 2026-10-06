@@ -1,5 +1,5 @@
 # This file is generated from ros-distro-template (template/tests/ros2-tf2-ros/static_transform_publisher_smoke_test_launch.py).
-# Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).
+# If you change it here, upstream the change: comment `@robostack-bot upstream-to-template` on your PR.
 
 import sys
 

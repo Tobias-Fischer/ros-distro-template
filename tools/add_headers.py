@@ -25,7 +25,7 @@ EXEMPT = {"LICENSE", "[= _copier_conf.answers_file =].jinja"}
 def header_lines(source: str) -> list[str]:
     return [
         f"This file is {MARKER} (template/{source}).",
-        'Do not edit it here: change the template instead (see "Template-owned files" in AGENTS.md).',
+        "If you change it here, upstream the change: comment `@robostack-bot upstream-to-template` on your PR.",
     ]
 
 
@@ -49,7 +49,7 @@ def with_header(path: Path, text: str) -> str:
         if MARKER in line:
             markdown = i > 0 and lines[i - 1].strip() == "<!--"
             start = i - 1 if markdown else i
-            end = i + 2 + (1 if markdown else 0)  # marker line, "Do not edit" line, "-->"
+            end = i + 2 + (1 if markdown else 0)  # marker line, upstream line, "-->"
             if end < len(lines) and not lines[end].strip():
                 end += 1
             lines = lines[:start] + lines[end:]

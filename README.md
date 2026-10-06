@@ -65,7 +65,8 @@ Prefer one unified file over a conditional; add a conditional only for a real
 difference between distributions.
 
 Every template-owned file starts with a short header ("This file is generated from
-ros-distro-template (template/…). Do not edit it here …"). After adding or moving a
+ros-distro-template (template/…). If you change it here, upstream the change: comment
+`@robostack-bot upstream-to-template` on your PR."). After adding or moving a
 file, run `pixi run headers`; the tests fail if a header is missing or outdated.
 
 > `template/.gitignore` ignores `*.sh`/`*.bat`, so new scripts under
