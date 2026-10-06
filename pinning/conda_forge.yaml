@@ -3,14 +3,15 @@
 # Updated by `robostack-bot update-conda-forge-pinning`; a distribution can stay on
 # an older version with the `conda_forge_pinning_version` /
 # `conda_forge_migrations` copier answers.
-conda_forge_pinning_version: 2026.09.25.23.22.04
+conda_forge_pinning_version: 2026.10.06.00.01.32
 migrations:
   - elfutils0196
   - giflib6
   - go_macos
+  - gsl28
   - gstreamer128
   - hdf52
   - libboost190
+  - libhwloc2150
   - proj99
   - urdfdom6
-  - vtk970
