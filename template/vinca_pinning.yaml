@@ -1,19 +1,20 @@
-conda_forge_pinning_version: 2026.09.25.23.22.04
+conda_forge_pinning_version: 2026.10.06.00.01.32
 migrations:
   - elfutils0196
   - giflib6
   - go_macos
+  - gsl28
   - gstreamer128
   - hdf52
   - libboost190
+  - libhwloc2150
   - proj99
   - urdfdom6
-  - vtk970
 pinning_overrides:
   # Build commands provide their channels with `-c`, so omit the inherited
   # conda-forge-pinning channel_sources value from the rendered configuration.
-  channel_sources: null
-  channel_targets: null
+  channel_sources:
+  channel_targets:
   # glibc floor raised from 2.17 (CentOS 7) to 2.28: conda-forge packages such as
   # gazebo/openal-soft already require it. macOS deployment target raised to 14.0.
   # c_stdlib_version shares a zip_keys group with the compiler versions, so the whole
