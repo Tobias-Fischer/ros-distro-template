@@ -67,6 +67,8 @@ jobs:
         run: |
           cat "$RUNNER_TEMP/summary.md" >> "$GITHUB_STEP_SUMMARY"
           echo "::warning::Template-owned files were edited; see the job summary."
+          gh label create upstream-to-template --repo "$GITHUB_REPOSITORY" --color d93f0b \
+            --description "Edits template-owned files; move them into the template" 2>/dev/null || true
           gh pr edit "$PR" --repo "$GITHUB_REPOSITORY" --add-label upstream-to-template || true
 
   plan:

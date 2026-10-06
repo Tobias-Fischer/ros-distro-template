@@ -166,7 +166,9 @@ def upstream(repo: Path, template_dir: Path) -> Result:
     lines; otherwise the file is reported for a manual port.
     """
     answers = tpl.read_answers(repo)
-    found = tpl.drift(repo, str(template_dir))
+    # Compare against the recorded template version (from the template's own
+    # repository, which has the tags); template_dir is only where edits go.
+    found = tpl.drift(repo)
     applied, manual = [], []
     for d in found:
         if d.status != "modified":
