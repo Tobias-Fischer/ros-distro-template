@@ -110,7 +110,7 @@ class RenderTest(unittest.TestCase):
     def test_distribution_values(self):
         rolling = (self.rendered["rolling"] / "pixi.toml").read_text()
         self.assertIn('default = "ros2-ros-workspace"', rolling)
-        self.assertIn('rev = "df761ca6d82105d6873639d398a2fdba1a757f72"', rolling)
+        self.assertIn('rev = "005b6e31c581e023bbedc4037d770626c5a66614"', rolling)
         self.assertIn("rattler-build upload prefix -c robostack-rolling", rolling)
         humble = (self.rendered["humble"] / "pixi.toml").read_text()
         self.assertIn("-c https://conda.anaconda.org/robostack-staging", humble)
