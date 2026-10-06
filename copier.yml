@@ -62,6 +62,13 @@ conda_forge_migrations:
   default: []
   when: "[= conda_forge_pinning_version != '' =]"
 
+pinning_overrides:
+  type: yaml
+  help: >-
+    Distribution-specific pinning overrides, e.g. {python: ["3.12.* *_cpython"]};
+    they replace the shared entries of the same name in pinning/overrides.yaml
+  default: {}
+
 # Computed values (not asked, not stored in the answers file).
 channel_url:
   type: str
